@@ -19,7 +19,13 @@ async function seed() {
   for (const entry of users) {
     const existing = await User.findOne({ email: entry.email });
     if (existing) {
-      console.log(`[skip] ${entry.email} already exists`);
+      if (existing.role !== entry.role) {
+        existing.role = entry.role;
+        await existing.save();
+        console.log(`[updated] ${entry.email} role → ${entry.role}`);
+      } else {
+        console.log(`[skip] ${entry.email} already exists`);
+      }
       continue;
     }
 
