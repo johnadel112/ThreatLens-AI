@@ -1,4 +1,5 @@
 import Alert, { ALERT_STATUSES } from '../models/Alert.js';
+import { ownerFilter, assertDocumentOwner } from '../utils/ownerScope.js';
 
 function buildAlertFilter(query) {
   const filter = {};
@@ -28,7 +29,7 @@ export async function listAlerts(req, res, next) {
     const page = parseInt(req.query.page || '1', 10);
     const limit = parseInt(req.query.limit || '20', 10);
     const skip = (page - 1) * limit;
-    const filter = buildAlertFilter(req.query);
+    const filter = { ...buildAlertFilter(req.query), ...ownerFilter(req.user._id) };
 
     const [alerts, total] = await Promise.all([
       Alert.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
@@ -52,11 +53,10 @@ export async function listAlerts(req, res, next) {
 export async function getAlert(req, res, next) {
   try {
     const alert = await Alert.findById(req.params.id);
-    if (!alert) {
-      return res.status(404).json({ error: 'Alert not found', code: 'NOT_FOUND' });
-    }
+    assertDocumentOwner(alert, req.user._id);
     res.json({ alert: alert.toPublicJSON() });
   } catch (err) {
+    if (err.status === 404) return res.status(404).json({ error: 'Alert not found', code: 'NOT_FOUND' });
     next(err);
   }
 }
@@ -73,29 +73,31 @@ export async function updateAlertStatus(req, res, next) {
     }
 
     const alert = await Alert.findById(req.params.id);
-    if (!alert) {
-      return res.status(404).json({ error: 'Alert not found', code: 'NOT_FOUND' });
-    }
+    assertDocumentOwner(alert, req.user._id);
 
     alert.status = status;
     await alert.save();
 
     res.json({ alert: alert.toPublicJSON() });
   } catch (err) {
+    if (err.status === 404) return res.status(404).json({ error: 'Alert not found', code: 'NOT_FOUND' });
     next(err);
   }
 }
 
-export async function getAlertStats(_req, res, next) {
+export async function getAlertStats(req, res, next) {
   try {
+    const userMatch = ownerFilter(req.user._id);
     const [total, openCount, bySeverity, byStatus] = await Promise.all([
-      Alert.countDocuments(),
-      Alert.countDocuments({ status: 'open' }),
+      Alert.countDocuments(userMatch),
+      Alert.countDocuments({ ...userMatch, status: 'open' }),
       Alert.aggregate([
+        { $match: userMatch },
         { $group: { _id: '$severity', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
       ]),
       Alert.aggregate([
+        { $match: userMatch },
         { $group: { _id: '$status', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
       ]),

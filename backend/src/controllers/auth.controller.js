@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
-import { ROLES } from '../config/constants.js';
+import { PUBLIC_REGISTER_ROLES, ROLES } from '../config/constants.js';
 import { signToken } from '../utils/jwt.js';
 
 const BCRYPT_ROUNDS = 12;
@@ -14,8 +14,7 @@ export async function register(req, res, next) {
       return res.status(409).json({ error: 'Email already registered', code: 'CONFLICT' });
     }
 
-    const userCount = await User.countDocuments();
-    const assignedRole = userCount === 0 ? ROLES.ADMIN : role || ROLES.VIEWER;
+    const assignedRole = PUBLIC_REGISTER_ROLES.includes(role) ? role : ROLES.ANALYST;
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const user = await User.create({ name, email, passwordHash, role: assignedRole });
@@ -36,7 +35,19 @@ export async function login(req, res, next) {
       return res.status(401).json({ error: 'Invalid email or password', code: 'UNAUTHORIZED' });
     }
 
-    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!user.passwordHash || typeof user.passwordHash !== 'string') {
+      return res.status(401).json({
+        error: 'Account is missing a password. Please register again or contact support.',
+        code: 'UNAUTHORIZED',
+      });
+    }
+
+    let valid = false;
+    try {
+      valid = await bcrypt.compare(password, user.passwordHash);
+    } catch {
+      return res.status(401).json({ error: 'Invalid email or password', code: 'UNAUTHORIZED' });
+    }
     if (!valid) {
       return res.status(401).json({ error: 'Invalid email or password', code: 'UNAUTHORIZED' });
     }

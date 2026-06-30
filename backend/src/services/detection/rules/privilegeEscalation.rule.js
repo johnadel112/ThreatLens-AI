@@ -35,6 +35,7 @@ export const privilegeEscalationRule = {
 
     for (const ruleId of PRECURSOR_RULES) {
       precursorAlert = await findRecentAlert({
+        userId: event.userId,
         ruleId,
         username: event.username,
         ip: event.ip,

@@ -8,17 +8,18 @@ import {
   toIncidentDetailJson,
 } from '../incident/incidentLoader.js';
 import { syncPlaybookActionsFromRecommendations } from '../playbook/playbookService.js';
+import { buildReportForIncident } from '../reports/reportBuilder.js';
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function ensureWorkflowAgents(incidentId) {
+async function ensureWorkflowAgents(incidentId, userId) {
   for (const agentName of WORKFLOW_AGENTS) {
     await AgentOutput.findOneAndUpdate(
       { incidentId, agentName },
       {
-        $setOnInsert: { incidentId, agentName },
+        $setOnInsert: { incidentId, agentName, userId },
         $set: { status: 'waiting', error: undefined },
       },
       { upsert: true, new: true }
@@ -68,7 +69,7 @@ function buildTimelineFromInvestigation(reportOutput, reviewerOutput) {
   return entries;
 }
 
-export async function runBasicInvestigation(incidentId) {
+export async function runBasicInvestigation(incidentId, user) {
   const bundle = await loadIncidentBundle(incidentId);
   if (!bundle) {
     const err = new Error('Incident not found');
@@ -77,8 +78,9 @@ export async function runBasicInvestigation(incidentId) {
   }
 
   const { incident, alerts, events } = bundle;
+  const userId = incident.userId;
 
-  await ensureWorkflowAgents(incidentId);
+  await ensureWorkflowAgents(incidentId, userId);
 
   // Allow re-run if a previous investigation was interrupted (crash, timeout, etc.)
   if (incident.investigationStatus === 'running') {
@@ -126,6 +128,7 @@ export async function runBasicInvestigation(incidentId) {
       markdown: workflowResult.markdown,
       generatedAt: new Date(),
       version: (incident.report?.version || 0) + 1,
+      generatedBy: user?._id,
     };
     incident.investigationStatus = 'completed';
 
@@ -139,6 +142,10 @@ export async function runBasicInvestigation(incidentId) {
     const mitigationAgent = workflowResult.agents.find((a) => a.agent_name === 'mitigation');
     const mitigationActions = mitigationAgent?.output?.actions || workflowResult.recommendations || [];
     await syncPlaybookActionsFromRecommendations(incident, mitigationActions);
+
+    if (user) {
+      await buildReportForIncident(incidentId, user);
+    }
 
     const refreshed = await loadIncidentBundle(incidentId);
     const outputs = await getAgentOutputs(incidentId);

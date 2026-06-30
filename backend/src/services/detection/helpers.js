@@ -7,6 +7,7 @@ export function windowStart(timestamp, windowMinutes) {
 }
 
 export async function queryRecentEvents({
+  userId,
   eventType,
   eventTypes,
   username,
@@ -19,6 +20,8 @@ export async function queryRecentEvents({
   const filter = {
     timestamp: { $gte: since, $lte: until },
   };
+
+  if (userId) filter.userId = userId;
 
   if (types.length === 1) {
     filter.eventType = types[0];
@@ -37,11 +40,13 @@ export async function queryRecentEvents({
   return SecurityEvent.find(filter).sort({ timestamp: 1 }).limit(limit);
 }
 
-export async function countRecentEvents({ eventType, username, ip, since, until }) {
+export async function countRecentEvents({ userId, eventType, username, ip, since, until }) {
   const filter = {
     eventType,
     timestamp: { $gte: since, $lte: until },
   };
+
+  if (userId) filter.userId = userId;
 
   if (username && ip) {
     filter.$or = [{ username }, { ip }];
@@ -54,13 +59,15 @@ export async function countRecentEvents({ eventType, username, ip, since, until 
   return SecurityEvent.countDocuments(filter);
 }
 
-export async function hasOpenAlert({ ruleId, username, ip, sinceMinutes = 60 }) {
+export async function hasOpenAlert({ userId, ruleId, username, ip, sinceMinutes = 60 }) {
   const since = new Date(Date.now() - sinceMinutes * 60 * 1000);
   const filter = {
     ruleId,
     status: { $in: ['open', 'acknowledged'] },
     createdAt: { $gte: since },
   };
+
+  if (userId) filter.userId = userId;
 
   if (username && ip) {
     filter.$or = [{ username }, { ip }];
@@ -74,12 +81,15 @@ export async function hasOpenAlert({ ruleId, username, ip, sinceMinutes = 60 }) 
   return !!existing;
 }
 
-export async function findRecentAlert({ ruleId, username, ip, sinceMinutes }) {
+export async function findRecentAlert({ userId, ruleId, username, ip, sinceMinutes }) {
   const since = windowStart(new Date(), sinceMinutes);
   const filter = {
     ruleId,
+    status: { $in: ['open', 'acknowledged'] },
     createdAt: { $gte: since },
   };
+
+  if (userId) filter.userId = userId;
 
   if (username) filter.username = username;
   if (ip) filter.ip = ip;
@@ -88,6 +98,7 @@ export async function findRecentAlert({ ruleId, username, ip, sinceMinutes }) {
 }
 
 export function buildAlertPayload({
+  userId,
   title,
   severity,
   ruleId,
@@ -98,6 +109,7 @@ export function buildAlertPayload({
   ip,
 }) {
   return {
+    userId,
     title,
     severity,
     ruleId,

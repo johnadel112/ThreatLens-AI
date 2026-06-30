@@ -64,18 +64,11 @@ for i in 1 2 3 4 5 6 7 8 9 10; do
   sleep 3
 done
 
-echo "==> Seeding demo users..."
-docker compose exec -T backend node scripts/seed-users.js || true
-
 echo ""
 echo "============================================"
 echo "ThreatLens AI is running (MongoDB in Docker)"
 echo ""
 echo "  Dashboard:  ${DASHBOARD_URL}"
 echo "  Backend:    http://${PUBLIC_HOST}:4000/health"
-echo "  Login:      analyst@threatlens.local / Analyst123!"
-echo ""
-echo "  Simulator (on your PC):"
-echo "    BACKEND_URL=http://${PUBLIC_HOST}:4000/api"
-echo "    SIMULATOR_API_KEY=simulator-docker-key"
+echo "  Register a new account at ${DASHBOARD_URL}/register"
 echo "============================================"

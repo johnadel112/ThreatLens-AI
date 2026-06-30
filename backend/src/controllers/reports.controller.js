@@ -1,4 +1,5 @@
 import Incident from '../models/Incident.js';
+import { ownerFilter, assertDocumentOwner } from '../utils/ownerScope.js';
 
 function toReportSummary(incident) {
   return {
@@ -26,7 +27,10 @@ export async function listReports(req, res, next) {
     const limit = parseInt(req.query.limit || '20', 10);
     const skip = (page - 1) * limit;
 
-    const filter = { 'report.markdown': { $exists: true, $nin: [null, ''] } };
+    const filter = {
+      ...ownerFilter(req.user._id),
+      'report.markdown': { $exists: true, $nin: [null, ''] },
+    };
 
     const [incidents, total] = await Promise.all([
       Incident.find(filter)
@@ -56,6 +60,7 @@ export async function getReport(req, res, next) {
     if (!incident?.report?.markdown) {
       return res.status(404).json({ error: 'Report not found', code: 'NOT_FOUND' });
     }
+    assertDocumentOwner(incident, req.user._id);
 
     res.json({
       report: {

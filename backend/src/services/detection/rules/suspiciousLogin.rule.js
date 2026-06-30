@@ -54,6 +54,7 @@ export const suspiciousLoginRule = {
     const since = windowStart(until, this.windowMinutes);
 
     const failedEvents = await queryRecentEvents({
+      userId: event.userId,
       eventTypes: DETECTION_EVENT_GROUPS.failedAuth,
       username: event.username,
       ip: event.ip,

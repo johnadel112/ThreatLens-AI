@@ -3,6 +3,7 @@ import {
   getIncident,
   getIncidentAgentOutputs,
   getIncidentStats,
+  generateIncidentReport,
   investigateIncident,
   listIncidents,
   refreshTimeline,
@@ -33,6 +34,12 @@ router.post(
   authenticate,
   authorize(ROLES.ADMIN, ROLES.ANALYST),
   investigateIncident
+);
+router.post(
+  '/:id/report',
+  authenticate,
+  authorize(ROLES.ADMIN, ROLES.ANALYST),
+  generateIncidentReport
 );
 router.post(
   '/:id/refresh-timeline',

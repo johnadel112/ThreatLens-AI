@@ -11,6 +11,7 @@ import aiRoutes from './routes/ai.routes.js';
 import playbooksRoutes from './routes/playbooks.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import reportsRoutes from './routes/reports.routes.js';
+import liveEventsRoutes from './routes/liveEvents.routes.js';
 
 const app = express();
 
@@ -61,6 +62,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/playbooks', playbooksRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/live-events', liveEventsRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Not found' });

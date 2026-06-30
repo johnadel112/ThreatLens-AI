@@ -1,6 +1,8 @@
 import SecurityEvent from '../models/SecurityEvent.js';
 import { runDetection } from '../services/detection/engine.js';
+import { createSecurityEvent } from '../services/events/createSecurityEvent.js';
 import { normalizeIncomingEvent } from '../services/events/normalize.js';
+import { ownerFilter } from '../utils/ownerScope.js';
 
 function buildEventFilter(query) {
   const filter = {};
@@ -32,12 +34,24 @@ function buildEventFilter(query) {
 
 export async function createEvent(req, res, next) {
   try {
+    if (req.user) {
+      const { event, alerts, incidentId } = await createSecurityEvent(req.body, req.user._id);
+      return res.status(201).json({
+        event: event.toPublicJSON(),
+        alertsCreated: alerts.length,
+        alerts: alerts.map((a) => a.toPublicJSON()),
+        incidentId,
+      });
+    }
+
     const normalized = normalizeIncomingEvent(req.body);
+    if (!req.body.userId) {
+      return res.status(400).json({ error: 'userId required for API key ingestion', code: 'VALIDATION_ERROR' });
+    }
+    normalized.userId = req.body.userId;
 
     const event = await SecurityEvent.create(normalized);
-
     const alerts = await runDetection(event);
-
     const incidentId =
       alerts.find((a) => a.incidentId)?.incidentId?.toString() || null;
 
@@ -57,7 +71,7 @@ export async function listEvents(req, res, next) {
     const page = parseInt(req.query.page || '1', 10);
     const limit = parseInt(req.query.limit || '20', 10);
     const skip = (page - 1) * limit;
-    const filter = buildEventFilter(req.query);
+    const filter = { ...buildEventFilter(req.query), ...ownerFilter(req.user._id) };
 
     const [events, total] = await Promise.all([
       SecurityEvent.find(filter).sort({ timestamp: -1 }).skip(skip).limit(limit),
@@ -78,15 +92,18 @@ export async function listEvents(req, res, next) {
   }
 }
 
-export async function getEventStats(_req, res, next) {
+export async function getEventStats(req, res, next) {
   try {
+    const userMatch = ownerFilter(req.user._id);
     const [total, bySeverity, byType] = await Promise.all([
-      SecurityEvent.countDocuments(),
+      SecurityEvent.countDocuments(userMatch),
       SecurityEvent.aggregate([
+        { $match: userMatch },
         { $group: { _id: '$severity', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
       ]),
       SecurityEvent.aggregate([
+        { $match: userMatch },
         { $group: { _id: '$eventType', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 10 },

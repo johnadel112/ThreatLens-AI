@@ -10,6 +10,8 @@ import {
   runBasicInvestigation,
   getAgentOutputs,
 } from '../services/ai/investigateService.js';
+import { buildReportForIncident } from '../services/reports/reportBuilder.js';
+import { ownerFilter, assertDocumentOwner } from '../utils/ownerScope.js';
 
 function buildIncidentFilter(query) {
   const filter = {};
@@ -38,7 +40,7 @@ export async function listIncidents(req, res, next) {
     const page = parseInt(req.query.page || '1', 10);
     const limit = parseInt(req.query.limit || '20', 10);
     const skip = (page - 1) * limit;
-    const filter = buildIncidentFilter(req.query);
+    const filter = { ...buildIncidentFilter(req.query), ...ownerFilter(req.user._id) };
 
     const [incidents, total] = await Promise.all([
       Incident.find(filter)
@@ -80,6 +82,7 @@ export async function getIncident(req, res, next) {
     if (!bundle) {
       return res.status(404).json({ error: 'Incident not found', code: 'NOT_FOUND' });
     }
+    assertDocumentOwner(bundle.incident, req.user._id);
 
     const agentOutputs = await getAgentOutputs(req.params.id);
     const json = toIncidentDetailJson(
@@ -91,6 +94,7 @@ export async function getIncident(req, res, next) {
 
     res.json({ incident: json });
   } catch (err) {
+    if (err.status === 404) return res.status(404).json({ error: 'Incident not found', code: 'NOT_FOUND' });
     next(err);
   }
 }
@@ -98,9 +102,7 @@ export async function getIncident(req, res, next) {
 export async function updateIncident(req, res, next) {
   try {
     const incident = await Incident.findById(req.params.id);
-    if (!incident) {
-      return res.status(404).json({ error: 'Incident not found', code: 'NOT_FOUND' });
-    }
+    assertDocumentOwner(incident, req.user._id);
 
     const { status, assignedAnalystId } = req.body;
 
@@ -140,13 +142,17 @@ export async function updateIncident(req, res, next) {
 
     res.json({ incident: json });
   } catch (err) {
+    if (err.status === 404) return res.status(404).json({ error: 'Incident not found', code: 'NOT_FOUND' });
     next(err);
   }
 }
 
 export async function investigateIncident(req, res, next) {
   try {
-    const result = await runBasicInvestigation(req.params.id);
+    const incident = await Incident.findById(req.params.id);
+    assertDocumentOwner(incident, req.user._id);
+
+    const result = await runBasicInvestigation(req.params.id, req.user);
 
     res.json({
       message: 'AI investigation completed',
@@ -162,12 +168,39 @@ export async function investigateIncident(req, res, next) {
   }
 }
 
+export async function generateIncidentReport(req, res, next) {
+  try {
+    const incident = await Incident.findById(req.params.id);
+    assertDocumentOwner(incident, req.user._id);
+
+    const report = await buildReportForIncident(req.params.id, req.user);
+    if (!report) {
+      return res.status(404).json({ error: 'Incident not found', code: 'NOT_FOUND' });
+    }
+    res.json({
+      report: {
+        incidentId: report.incident._id,
+        title: report.incident.title,
+        severity: report.incident.severity,
+        status: report.incident.status,
+        markdown: report.markdown,
+        generatedAt: report.incident.report.generatedAt,
+        version: report.incident.report.version,
+      },
+    });
+  } catch (err) {
+    if (err.status === 404) return res.status(404).json({ error: err.message, code: 'NOT_FOUND' });
+    next(err);
+  }
+}
+
 export async function getIncidentAgentOutputs(req, res, next) {
   try {
     const bundle = await loadIncidentBundle(req.params.id);
     if (!bundle) {
       return res.status(404).json({ error: 'Incident not found', code: 'NOT_FOUND' });
     }
+    assertDocumentOwner(bundle.incident, req.user._id);
 
     const outputs = await getAgentOutputs(req.params.id);
     res.json({ agentOutputs: outputs.map((o) => o.toPublicJSON()) });
@@ -179,9 +212,7 @@ export async function getIncidentAgentOutputs(req, res, next) {
 export async function refreshTimeline(req, res, next) {
   try {
     const incident = await Incident.findById(req.params.id);
-    if (!incident) {
-      return res.status(404).json({ error: 'Incident not found', code: 'NOT_FOUND' });
-    }
+    assertDocumentOwner(incident, req.user._id);
 
     const { timeline, relatedEvents } = await rebuildIncidentTimeline(incident._id);
     incident.timeline = timeline;
@@ -190,20 +221,24 @@ export async function refreshTimeline(req, res, next) {
 
     res.json({ incident: incident.toPublicJSON() });
   } catch (err) {
+    if (err.status === 404) return res.status(404).json({ error: 'Incident not found', code: 'NOT_FOUND' });
     next(err);
   }
 }
 
-export async function getIncidentStats(_req, res, next) {
+export async function getIncidentStats(req, res, next) {
   try {
+    const userMatch = ownerFilter(req.user._id);
     const [total, openCount, bySeverity, byStatus] = await Promise.all([
-      Incident.countDocuments(),
-      Incident.countDocuments({ status: { $in: ['new', 'investigating'] } }),
+      Incident.countDocuments(userMatch),
+      Incident.countDocuments({ ...userMatch, status: { $in: ['new', 'investigating'] } }),
       Incident.aggregate([
+        { $match: userMatch },
         { $group: { _id: '$severity', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
       ]),
       Incident.aggregate([
+        { $match: userMatch },
         { $group: { _id: '$status', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
       ]),

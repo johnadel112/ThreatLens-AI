@@ -5,6 +5,7 @@ const ALERT_STATUSES = ['open', 'acknowledged', 'resolved', 'false_positive'];
 
 const alertSchema = new mongoose.Schema(
   {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     title: { type: String, required: true },
     severity: { type: String, enum: SEVERITIES, required: true },
     status: { type: String, enum: ALERT_STATUSES, default: 'open', index: true },
@@ -28,6 +29,7 @@ alertSchema.index({ ruleId: 1, ip: 1, status: 1, createdAt: -1 });
 alertSchema.methods.toPublicJSON = function toPublicJSON() {
   return {
     id: this._id,
+    userId: this.userId,
     title: this.title,
     severity: this.severity,
     status: this.status,

@@ -13,8 +13,10 @@ export async function runDetection(event) {
     try {
       const payload = await rule.evaluate(event);
       if (!payload) continue;
+      payload.userId = event.userId;
 
       const isDuplicate = await hasOpenAlert({
+        userId: event.userId,
         ruleId: rule.id,
         username: payload.username,
         ip: payload.ip,
@@ -23,7 +25,10 @@ export async function runDetection(event) {
 
       if (isDuplicate) continue;
 
-      const alert = await Alert.create(payload);
+      const alert = await Alert.create({
+        ...payload,
+        userId: event.userId,
+      });
       await groupAlertIntoIncident(alert);
       alertsCreated.push(alert);
     } catch (err) {

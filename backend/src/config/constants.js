@@ -6,7 +6,7 @@ export const ROLES = {
 
 export const ROLE_LIST = Object.values(ROLES);
 
-export const PUBLIC_REGISTER_ROLES = [ROLES.VIEWER, ROLES.ANALYST];
+export const PUBLIC_REGISTER_ROLES = [ROLES.ADMIN, ROLES.ANALYST];
 
 import { ACCEPTED_EVENT_TYPES, EVENT_TYPES } from './eventTypes.js';
 

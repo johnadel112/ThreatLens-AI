@@ -40,6 +40,7 @@ async function findMatchingIncident(alert) {
   if (orConditions.length === 0) return null;
 
   return Incident.findOne({
+    userId: alert.userId,
     status: { $in: OPEN_INCIDENT_STATUSES },
     createdAt: { $gte: since },
     $or: orConditions,
@@ -68,6 +69,7 @@ export async function groupAlertIntoIncident(alert) {
 
   if (!incident) {
     incident = await Incident.create({
+      userId: alert.userId,
       title: deriveIncidentTitle([alert]),
       severity: alert.severity,
       status: 'new',

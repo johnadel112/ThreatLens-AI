@@ -7,6 +7,7 @@ import {
 
 const playbookActionSchema = new mongoose.Schema(
   {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     incidentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Incident', required: true, index: true },
     actionType: { type: String, enum: PLAYBOOK_ACTION_TYPES, required: true },
     description: { type: String, required: true },

@@ -3,6 +3,7 @@ import PlaybookAction from '../../models/PlaybookAction.js';
 import { PLAYBOOK_ACTION_TYPES } from '../../config/constants.js';
 import { recordAudit } from './auditService.js';
 import { executePlaybookAction } from './executor.js';
+import { assertDocumentOwner } from '../../utils/ownerScope.js';
 
 function normalizeActionType(actionType) {
   if (PLAYBOOK_ACTION_TYPES.includes(actionType)) return actionType;
@@ -37,6 +38,7 @@ export async function syncPlaybookActionsFromRecommendations(incident, recommend
     if (existingTypes.has(actionType)) continue;
 
     const action = await PlaybookAction.create({
+      userId: incident.userId,
       incidentId: incident._id,
       actionType,
       description: rec.description,
@@ -54,8 +56,9 @@ export async function syncPlaybookActionsFromRecommendations(incident, recommend
   return created;
 }
 
-export async function listPlaybookActions({ incidentId, status } = {}) {
+export async function listPlaybookActions({ incidentId, status, userId } = {}) {
   const filter = {};
+  if (userId) filter.userId = userId;
   if (incidentId) filter.incidentId = incidentId;
   if (status) filter.status = status;
 
@@ -78,6 +81,7 @@ export async function approvePlaybookAction(actionId, user) {
     err.status = 404;
     throw err;
   }
+  assertDocumentOwner(action, user._id);
   if (action.status !== 'pending') {
     const err = new Error(`Cannot approve action with status "${action.status}"`);
     err.status = 400;
@@ -122,6 +126,7 @@ export async function rejectPlaybookAction(actionId, user, reason = '') {
     err.status = 404;
     throw err;
   }
+  assertDocumentOwner(action, user._id);
   if (action.status !== 'pending') {
     const err = new Error(`Cannot reject action with status "${action.status}"`);
     err.status = 400;
@@ -152,6 +157,7 @@ export async function executePlaybookActionById(actionId, user) {
     err.status = 404;
     throw err;
   }
+  assertDocumentOwner(action, user._id);
   if (action.status !== 'approved') {
     const err = new Error('Action must be approved before execution');
     err.status = 400;

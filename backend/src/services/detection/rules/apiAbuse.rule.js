@@ -61,6 +61,7 @@ export const apiAbuseRule = {
     const since = windowStart(until, this.windowMinutes);
 
     const apiEvents = await queryRecentEvents({
+      userId: event.userId,
       eventTypes: DETECTION_EVENT_GROUPS.apiTraffic,
       ip: event.ip,
       since,

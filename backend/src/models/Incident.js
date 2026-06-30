@@ -14,6 +14,7 @@ const timelineEntrySchema = new mongoose.Schema(
 
 const incidentSchema = new mongoose.Schema(
   {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     title: { type: String, required: true },
     severity: { type: String, enum: SEVERITIES, default: 'high', index: true },
     status: { type: String, enum: INCIDENT_STATUSES, default: 'new', index: true },
@@ -40,6 +41,7 @@ const incidentSchema = new mongoose.Schema(
       markdown: String,
       generatedAt: Date,
       version: Number,
+      generatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     },
     investigationStatus: {
       type: String,
@@ -56,6 +58,7 @@ incidentSchema.index({ ip: 1, createdAt: -1 });
 incidentSchema.methods.toPublicJSON = function toPublicJSON() {
   return {
     id: this._id,
+    userId: this.userId,
     title: this.title,
     severity: this.severity,
     status: this.status,

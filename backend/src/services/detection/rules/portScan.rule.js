@@ -59,6 +59,7 @@ export const portScanRule = {
     const since = windowStart(until, this.windowMinutes);
 
     const networkEvents = await queryRecentEvents({
+      userId: event.userId,
       eventTypes: DETECTION_EVENT_GROUPS.recon,
       ip: event.ip,
       since,

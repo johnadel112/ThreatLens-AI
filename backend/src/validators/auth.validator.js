@@ -12,7 +12,8 @@ export const registerValidator = [
     .matches(/[0-9]/)
     .withMessage('Password must contain a number'),
   body('role')
-    .optional()
+    .notEmpty()
+    .withMessage('Role is required')
     .isIn(PUBLIC_REGISTER_ROLES)
     .withMessage(`Role must be one of: ${PUBLIC_REGISTER_ROLES.join(', ')}`),
 ];

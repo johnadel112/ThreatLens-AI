@@ -51,6 +51,7 @@ export const dataExfiltrationRule = {
     const since = windowStart(until, this.windowMinutes);
 
     const downloadEvents = await queryRecentEvents({
+      userId: event.userId,
       eventTypes: DETECTION_EVENT_GROUPS.downloads,
       username: event.username,
       since,

@@ -5,6 +5,7 @@ const AGENT_STATUSES = ['waiting', 'running', 'completed', 'failed'];
 
 const agentOutputSchema = new mongoose.Schema(
   {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     incidentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Incident', required: true, index: true },
     agentName: { type: String, enum: AGENT_NAMES, required: true },
     status: { type: String, enum: AGENT_STATUSES, default: 'waiting' },

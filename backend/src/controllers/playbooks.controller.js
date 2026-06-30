@@ -7,12 +7,14 @@ import {
   toPlaybookPublicJSON,
 } from '../services/playbook/playbookService.js';
 import { listAuditLogs } from '../services/playbook/auditService.js';
+import { assertDocumentOwner } from '../utils/ownerScope.js';
 
 export async function listPlaybooks(req, res, next) {
   try {
     const actions = await listPlaybookActions({
       incidentId: req.query.incidentId,
       status: req.query.status,
+      userId: req.user._id,
     });
 
     res.json({
@@ -29,6 +31,7 @@ export async function getPlaybook(req, res, next) {
     if (!action) {
       return res.status(404).json({ error: 'Playbook action not found', code: 'NOT_FOUND' });
     }
+    assertDocumentOwner(action, req.user._id);
 
     res.json({ action: toPlaybookPublicJSON(action) });
   } catch (err) {

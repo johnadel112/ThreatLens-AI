@@ -4,6 +4,7 @@ import { SEVERITIES } from '../config/constants.js';
 
 const securityEventSchema = new mongoose.Schema(
   {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     source: { type: String, required: true, trim: true, index: true },
     eventType: { type: String, required: true, enum: EVENT_TYPES, index: true },
     username: { type: String, trim: true, index: true },
@@ -16,6 +17,7 @@ const securityEventSchema = new mongoose.Schema(
   { timestamps: false }
 );
 
+securityEventSchema.index({ userId: 1, timestamp: -1 });
 securityEventSchema.index({ username: 1, timestamp: -1 });
 securityEventSchema.index({ ip: 1, timestamp: -1 });
 securityEventSchema.index({ eventType: 1, timestamp: -1 });
@@ -23,6 +25,7 @@ securityEventSchema.index({ eventType: 1, timestamp: -1 });
 securityEventSchema.methods.toPublicJSON = function toPublicJSON() {
   return {
     id: this._id,
+    userId: this.userId,
     source: this.source,
     eventType: this.eventType,
     username: this.username,
