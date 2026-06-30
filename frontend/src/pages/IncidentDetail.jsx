@@ -1,17 +1,26 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { getIncident, getAgentOutputs, updateIncident, investigateIncident } from '../api/incidents';
+import { getIncident, getAgentOutputs, updateIncident, investigateIncident, generateIncidentReport } from '../api/incidents';
 import { getPlaybookActions, approvePlaybookAction, rejectPlaybookAction, executePlaybookAction, getAuditLog } from '../api/playbooks';
 import { useAuth } from '../context/AuthContext';
 import { usePolling } from '../hooks/usePolling';
 import Timeline from '../components/incidents/Timeline';
-import AgentActivityPanel from '../components/incidents/AgentActivityPanel';
+import AgentWorkflow from '../components/agents/AgentWorkflow';
+import GlassCard from '../components/ui/GlassCard';
 import AISummaryPanel from '../components/incidents/AISummaryPanel';
 import PlaybookPanel from '../components/incidents/PlaybookPanel';
 import SeverityBadge from '../components/ui/SeverityBadge';
 import StatusBadge from '../components/ui/StatusBadge';
 
 const INCIDENT_STATUSES = ['new', 'investigating', 'contained', 'resolved', 'closed'];
+const TABS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'timeline', label: 'Timeline' },
+  { id: 'evidence', label: 'Evidence' },
+  { id: 'ai', label: 'AI Investigation' },
+  { id: 'playbook', label: 'Playbook' },
+  { id: 'report', label: 'SOC Report' },
+];
 
 export default function IncidentDetail() {
   const { id } = useParams();
@@ -21,11 +30,13 @@ export default function IncidentDetail() {
   const [incident, setIncident] = useState(null);
   const [loading, setLoading] = useState(true);
   const [investigating, setInvestigating] = useState(false);
+  const [generatingReport, setGeneratingReport] = useState(false);
   const [error, setError] = useState('');
   const [actionMsg, setActionMsg] = useState('');
   const [playbookActions, setPlaybookActions] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [playbooksLoading, setPlaybooksLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
 
   const fetchIncident = useCallback(async () => {
     setLoading(true);
@@ -117,6 +128,29 @@ export default function IncidentDetail() {
     }
   }
 
+  async function handleGenerateReport() {
+    setGeneratingReport(true);
+    setError('');
+    setActionMsg('');
+
+    try {
+      const report = await generateIncidentReport(id);
+      setIncident((prev) => ({
+        ...prev,
+        report: {
+          markdown: report.markdown,
+          generatedAt: report.generatedAt,
+          version: report.version,
+        },
+      }));
+      setActionMsg(`SOC report generated (v${report.version})`);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to generate SOC report');
+    } finally {
+      setGeneratingReport(false);
+    }
+  }
+
   async function handleApprovePlaybook(actionId) {
     try {
       await approvePlaybookAction(actionId);
@@ -201,9 +235,18 @@ export default function IncidentDetail() {
               type="button"
               onClick={handleInvestigate}
               disabled={investigating}
-              className="px-3 py-2 rounded-lg text-xs bg-soc-accent/10 border border-soc-accent/30 text-soc-accent hover:bg-soc-accent/20 disabled:opacity-50"
+              className="btn-primary text-xs py-2"
             >
-              {investigating ? 'Investigating...' : 'Investigate with AI'}
+              {investigating ? 'Investigating…' : 'Investigate with AI'}
+            </button>
+            <button
+              type="button"
+              onClick={handleGenerateReport}
+              disabled={generatingReport || incident.investigationStatus !== 'completed'}
+              className="btn-ghost text-xs py-2"
+              title={incident.investigationStatus !== 'completed' ? 'Complete AI investigation first' : ''}
+            >
+              {generatingReport ? 'Generating…' : 'Generate SOC Report'}
             </button>
             {INCIDENT_STATUSES.filter((s) => s !== incident.status).slice(0, 2).map((status) => (
               <button
@@ -226,108 +269,132 @@ export default function IncidentDetail() {
       )}
 
       {error && (
-        <div className="mb-4 px-4 py-3 rounded-lg bg-soc-critical/10 border border-soc-critical/30 text-red-300 text-sm">
+        <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/25 text-red-300 text-sm">
           {error}
         </div>
       )}
 
+      <div className="flex gap-1 overflow-x-auto mb-6 pb-1 border-b border-white/[0.06]">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2.5 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors ${
+              activeTab === tab.id
+                ? 'text-soc-accent border-b-2 border-soc-accent bg-soc-accent/5'
+                : 'text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'overview' && (
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-6">
-          <section className="bg-soc-surface border border-soc-border rounded-xl p-5">
-            <h3 className="text-sm font-medium text-gray-300 mb-4">AI Investigation Summary</h3>
+          <GlassCard>
+            <h3 className="text-sm font-semibold text-white mb-4">AI Investigation Summary</h3>
             <AISummaryPanel incident={incident} />
-          </section>
-
-          <section className="bg-soc-surface border border-soc-border rounded-xl p-5">
-            <h3 className="text-sm font-medium text-gray-300 mb-4">Mitigation Playbook</h3>
-            <p className="text-xs text-gray-600 mb-4">
-              AI-recommended actions require analyst approval before simulated execution.
-            </p>
-            <PlaybookPanel
-              actions={playbookActions}
-              auditLogs={auditLogs}
-              canEdit={canEdit}
-              loading={playbooksLoading}
-              onApprove={handleApprovePlaybook}
-              onReject={handleRejectPlaybook}
-              onExecute={handleExecutePlaybook}
-            />
-          </section>
-
-          <section className="bg-soc-surface border border-soc-border rounded-xl p-5">
-            <h3 className="text-sm font-medium text-gray-300 mb-4">Timeline</h3>
-            <Timeline entries={incident.timeline} />
-          </section>
-
-          <section className="bg-soc-surface border border-soc-border rounded-xl p-5">
-            <h3 className="text-sm font-medium text-gray-300 mb-4">
-              Related Events ({incident.events?.length || 0})
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-500 border-b border-soc-border">
-                    <th className="pb-2 font-medium">Time</th>
-                    <th className="pb-2 font-medium">Type</th>
-                    <th className="pb-2 font-medium">User</th>
-                    <th className="pb-2 font-medium">IP</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(incident.events || []).slice(0, 20).map((event) => (
-                    <tr key={event.id} className="border-b border-soc-border/50">
-                      <td className="py-2 text-gray-400 text-xs">
-                        {new Date(event.timestamp).toLocaleString()}
-                      </td>
-                      <td className="py-2">
-                        <code className="text-xs text-soc-accent">{event.eventType}</code>
-                      </td>
-                      <td className="py-2 text-gray-300">{event.username || '—'}</td>
-                      <td className="py-2 text-gray-400 font-mono text-xs">{event.ip || '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </div>
-
-        <div className="space-y-6">
-          <section className="bg-soc-surface border border-soc-border rounded-xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-gray-300">Agent Activity</h3>
-              <Link
-                to={`/incidents/${id}/agents`}
-                className="text-xs text-soc-accent hover:underline"
-              >
-                View all →
-              </Link>
-            </div>
-            <AgentActivityPanel outputs={incident.agentOutputs} showAllAgents />
-            <p className="text-xs text-gray-600 mt-3 capitalize">
-              Investigation: {incident.investigationStatus?.replace(/_/g, ' ') || 'not started'}
-            </p>
-          </section>
-
-          <section className="bg-soc-surface border border-soc-border rounded-xl p-5">
-            <h3 className="text-sm font-medium text-gray-300 mb-4">
-              Related Alerts ({incident.alerts?.length || 0})
-            </h3>
+          </GlassCard>
+          <GlassCard>
+            <h3 className="text-sm font-semibold text-white mb-4">Related Alerts ({incident.alerts?.length || 0})</h3>
             <div className="space-y-3">
               {(incident.alerts || []).map((alert) => (
-                <div key={alert.id} className="p-3 rounded-lg bg-soc-bg border border-soc-border">
+                <div key={alert.id} className="p-3 rounded-xl bg-black/20 border border-white/[0.06]">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
                     <span className="text-sm text-white font-medium">{alert.title}</span>
                     <SeverityBadge severity={alert.severity} />
+                    <StatusBadge status={alert.status} />
                   </div>
-                  <StatusBadge status={alert.status} />
                   <p className="text-xs text-gray-500 mt-2">{alert.evidence?.summary}</p>
                 </div>
               ))}
             </div>
-          </section>
+          </GlassCard>
         </div>
+        <GlassCard>
+          <h3 className="text-sm font-semibold text-white mb-4">Quick Stats</h3>
+          <dl className="space-y-3 text-sm">
+            <div className="flex justify-between"><dt className="text-gray-500">Events</dt><dd className="text-white">{incident.events?.length || 0}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">Alerts</dt><dd className="text-white">{incident.alerts?.length || 0}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">Investigation</dt><dd className="text-soc-accent capitalize">{incident.investigationStatus?.replace(/_/g, ' ') || 'not started'}</dd></div>
+          </dl>
+        </GlassCard>
       </div>
+      )}
+
+      {activeTab === 'timeline' && (
+        <GlassCard>
+          <h3 className="text-sm font-semibold text-white mb-4">Incident Timeline</h3>
+          <Timeline entries={incident.timeline} />
+        </GlassCard>
+      )}
+
+      {activeTab === 'evidence' && (
+        <GlassCard padding={false} className="overflow-hidden">
+          <div className="p-5 border-b border-white/[0.06]">
+            <h3 className="text-sm font-semibold text-white">Related Events ({incident.events?.length || 0})</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead><tr><th>Time</th><th>Type</th><th>User</th><th>IP</th><th>Severity</th></tr></thead>
+              <tbody>
+                {(incident.events || []).map((event) => (
+                  <tr key={event.id}>
+                    <td className="text-gray-400 text-xs font-mono">{new Date(event.timestamp).toLocaleString()}</td>
+                    <td><code className="text-xs text-soc-accent font-mono">{event.eventType}</code></td>
+                    <td className="text-gray-300">{event.username || '—'}</td>
+                    <td className="text-gray-400 font-mono text-xs">{event.ip || '—'}</td>
+                    <td><SeverityBadge severity={event.severity} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </GlassCard>
+      )}
+
+      {activeTab === 'ai' && (
+        <GlassCard>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-white">Multi-Agent Investigation Pipeline</h3>
+            <Link to={`/incidents/${id}/agents`} className="text-xs text-soc-accent hover:underline">Full view →</Link>
+          </div>
+          <AgentWorkflow outputs={incident.agentOutputs} showAllAgents />
+        </GlassCard>
+      )}
+
+      {activeTab === 'playbook' && (
+        <GlassCard>
+          <h3 className="text-sm font-semibold text-white mb-2">Mitigation Playbook</h3>
+          <p className="text-xs text-gray-500 mb-4">AI-recommended actions require analyst approval before simulated execution.</p>
+          <PlaybookPanel
+            actions={playbookActions}
+            auditLogs={auditLogs}
+            canEdit={canEdit}
+            loading={playbooksLoading}
+            onApprove={handleApprovePlaybook}
+            onReject={handleRejectPlaybook}
+            onExecute={handleExecutePlaybook}
+          />
+        </GlassCard>
+      )}
+
+      {activeTab === 'report' && (
+        <GlassCard>
+          <h3 className="text-sm font-semibold text-white mb-4">AI-Assisted SOC Investigation Report</h3>
+          {incident.report?.markdown ? (
+            <pre className="p-4 rounded-xl bg-black/30 border border-white/[0.06] text-xs text-gray-400 whitespace-pre-wrap overflow-x-auto max-h-[600px] font-mono leading-relaxed">
+              {incident.report.markdown}
+            </pre>
+          ) : (
+            <p className="text-sm text-gray-500">Complete AI investigation, then generate a SOC report.</p>
+          )}
+        </GlassCard>
+      )}
+
     </div>
   );
 }

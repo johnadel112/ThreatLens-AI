@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getEvents } from '../api/events';
+import { usePolling } from '../hooks/usePolling';
+import PageHeader from '../components/ui/PageHeader';
+import { TableSkeleton } from '../components/ui/LoadingSkeleton';
+import EmptyState from '../components/ui/EmptyState';
+import { Radio } from 'lucide-react';
 import SeverityBadge from '../components/ui/SeverityBadge';
 
 const EVENT_TYPES = [
@@ -85,6 +90,8 @@ export default function Events() {
     fetchEvents();
   }, [fetchEvents]);
 
+  usePolling(fetchEvents, 5000, true);
+
   function updateFilter(key, value) {
     setPage(1);
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -98,35 +105,29 @@ export default function Events() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-white">Security Events</h2>
-          <p className="text-gray-400 mt-1">
-            Raw event logs ingested through the API pipeline
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={fetchEvents}
-          className="px-4 py-2 rounded-lg bg-soc-surface border border-soc-border text-sm text-gray-300 hover:text-white hover:border-soc-accent/50 transition-colors"
-        >
-          Refresh
-        </button>
-      </div>
+      <PageHeader
+        title="Security Events"
+        subtitle="Live JSON event stream ingested through the detection pipeline"
+        actions={
+          <button type="button" onClick={fetchEvents} className="btn-ghost text-sm py-2">
+            Refresh
+          </button>
+        }
+      />
 
-      <div className="bg-soc-surface border border-soc-border rounded-xl p-4 mb-6">
+      <div className="glass-panel p-4 mb-6">
         <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
           <input
             type="text"
             placeholder="Search username, IP, source..."
             value={filters.search}
             onChange={(e) => updateFilter('search', e.target.value)}
-            className="px-3 py-2 rounded-lg bg-soc-bg border border-soc-border text-white text-sm placeholder-gray-600 focus:outline-none focus:border-soc-accent"
+            className="input-field text-sm py-2"
           />
           <select
             value={filters.eventType}
             onChange={(e) => updateFilter('eventType', e.target.value)}
-            className="px-3 py-2 rounded-lg bg-soc-bg border border-soc-border text-white text-sm focus:outline-none focus:border-soc-accent"
+            className="input-field text-sm py-2"
           >
             {EVENT_TYPES.map((t) => (
               <option key={t || 'all'} value={t}>
@@ -137,7 +138,7 @@ export default function Events() {
           <select
             value={filters.severity}
             onChange={(e) => updateFilter('severity', e.target.value)}
-            className="px-3 py-2 rounded-lg bg-soc-bg border border-soc-border text-white text-sm focus:outline-none focus:border-soc-accent"
+            className="input-field text-sm py-2"
           >
             {SEVERITIES.map((s) => (
               <option key={s || 'all'} value={s}>
@@ -150,83 +151,75 @@ export default function Events() {
             placeholder="Filter by username"
             value={filters.username}
             onChange={(e) => updateFilter('username', e.target.value)}
-            className="px-3 py-2 rounded-lg bg-soc-bg border border-soc-border text-white text-sm placeholder-gray-600 focus:outline-none focus:border-soc-accent"
+            className="input-field text-sm py-2"
           />
           <input
             type="text"
             placeholder="Filter by IP"
             value={filters.ip}
             onChange={(e) => updateFilter('ip', e.target.value)}
-            className="px-3 py-2 rounded-lg bg-soc-bg border border-soc-border text-white text-sm placeholder-gray-600 focus:outline-none focus:border-soc-accent"
+            className="input-field text-sm py-2"
           />
         </form>
       </div>
 
       {error && (
-        <div className="mb-4 px-4 py-3 rounded-lg bg-soc-critical/10 border border-soc-critical/30 text-red-300 text-sm">
+        <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/25 text-red-300 text-sm">
           {error}
         </div>
       )}
 
-      <div className="bg-soc-surface border border-soc-border rounded-xl overflow-hidden">
+      {loading && events.length === 0 ? (
+        <TableSkeleton rows={8} />
+      ) : events.length === 0 ? (
+        <EmptyState
+          icon={Radio}
+          title="No events yet"
+          description="Live monitoring will populate this feed automatically. Events appear within seconds of login."
+        />
+      ) : (
+      <div className="glass-panel overflow-hidden p-0">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="data-table">
             <thead>
-              <tr className="border-b border-soc-border text-left text-gray-400">
-                <th className="px-4 py-3 font-medium">Timestamp</th>
-                <th className="px-4 py-3 font-medium">Event Type</th>
-                <th className="px-4 py-3 font-medium">Username</th>
-                <th className="px-4 py-3 font-medium">IP</th>
-                <th className="px-4 py-3 font-medium">Source</th>
-                <th className="px-4 py-3 font-medium">Severity</th>
-                <th className="px-4 py-3 font-medium">Metadata</th>
+              <tr>
+                <th>Timestamp</th>
+                <th>Event Type</th>
+                <th>Username</th>
+                <th>IP</th>
+                <th>Source</th>
+                <th>Severity</th>
+                <th>Metadata</th>
               </tr>
             </thead>
             <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                    Loading events...
-                  </td>
-                </tr>
-              ) : events.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                    No events found. Events will appear here once ingested via POST /api/events.
-                  </td>
-                </tr>
-              ) : (
-                events.map((event) => (
-                  <tr
-                    key={event.id}
-                    className="border-b border-soc-border/50 hover:bg-white/[0.02] transition-colors"
-                  >
-                    <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
+              {events.map((event) => (
+                  <tr key={event.id}>
+                    <td className="text-gray-300 whitespace-nowrap font-mono text-xs">
                       {formatTimestamp(event.timestamp)}
                     </td>
-                    <td className="px-4 py-3">
-                      <code className="text-xs text-soc-accent bg-soc-accent/10 px-1.5 py-0.5 rounded">
+                    <td>
+                      <code className="text-xs text-soc-accent bg-soc-accent/10 px-2 py-0.5 rounded-md font-mono">
                         {event.eventType}
                       </code>
                     </td>
-                    <td className="px-4 py-3 text-gray-300">{event.username || '—'}</td>
-                    <td className="px-4 py-3 text-gray-400 font-mono text-xs">{event.ip || '—'}</td>
-                    <td className="px-4 py-3 text-gray-400">{event.source}</td>
-                    <td className="px-4 py-3">
+                    <td className="text-gray-300">{event.username || '—'}</td>
+                    <td className="text-gray-400 font-mono text-xs">{event.ip || '—'}</td>
+                    <td className="text-gray-400">{event.source}</td>
+                    <td>
                       <SeverityBadge severity={event.severity} />
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       <MetadataCell metadata={event.metadata} />
                     </td>
                   </tr>
-                ))
-              )}
+                ))}
             </tbody>
           </table>
         </div>
 
         {!loading && pagination.total > 0 && (
-          <div className="px-4 py-3 border-t border-soc-border flex items-center justify-between">
+          <div className="px-5 py-3 border-t border-white/[0.06] flex items-center justify-between">
             <p className="text-xs text-gray-500">
               Showing {(pagination.page - 1) * pagination.limit + 1}–
               {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
@@ -255,6 +248,7 @@ export default function Events() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

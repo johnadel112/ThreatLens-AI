@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { FileText } from 'lucide-react';
 import { getReports } from '../api/reports';
+import PageHeader from '../components/ui/PageHeader';
+import EmptyState from '../components/ui/EmptyState';
+import { TableSkeleton } from '../components/ui/LoadingSkeleton';
 import SeverityBadge from '../components/ui/SeverityBadge';
 
 function formatTime(value) {
@@ -35,12 +39,10 @@ export default function Reports() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-white">SOC Reports</h2>
-        <p className="text-gray-400 mt-1">
-          AI-generated investigation reports from completed incident workflows.
-        </p>
-      </div>
+      <PageHeader
+        title="SOC Reports"
+        subtitle="AI-assisted investigation reports from completed incident workflows"
+      />
 
       {error && (
         <div className="mb-4 px-4 py-3 rounded-lg bg-soc-critical/10 border border-soc-critical/30 text-red-300 text-sm">
@@ -49,21 +51,22 @@ export default function Reports() {
       )}
 
       {loading ? (
-        <p className="text-gray-500">Loading reports...</p>
+        <TableSkeleton rows={5} />
       ) : reports.length === 0 ? (
-        <div className="bg-soc-surface border border-soc-border rounded-xl p-8 text-center">
-          <p className="text-gray-400">No reports yet.</p>
-          <p className="text-sm text-gray-600 mt-2">
-            Open an incident and run <span className="text-soc-accent">Investigate with AI</span> to generate a report.
-          </p>
-          <Link to="/incidents" className="inline-block mt-4 text-sm text-soc-accent hover:underline">
-            Go to Incidents →
-          </Link>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title="No reports yet"
+          description="Complete an AI investigation on an incident, then generate a professional SOC report."
+          action={
+            <Link to="/incidents" className="btn-primary text-sm">
+              Go to Incidents
+            </Link>
+          }
+        />
       ) : (
         <>
-          <div className="bg-soc-surface border border-soc-border rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="glass-panel overflow-hidden p-0">
+            <table className="data-table">
               <thead>
                 <tr className="text-left text-gray-500 border-b border-soc-border">
                   <th className="px-5 py-3 font-medium">Incident</th>

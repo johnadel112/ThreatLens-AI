@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import AuthLayout from '../components/auth/AuthLayout';
 
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'viewer' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'analyst' });
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -23,13 +26,16 @@ export default function Register() {
 
     try {
       await register(form);
+      toast.success('Account created — live monitoring starting');
       navigate('/', { replace: true });
     } catch (err) {
       const data = err.response?.data;
       if (data?.details) {
         setFieldErrors(data.details);
       } else {
-        setError(data?.error || 'Registration failed. Please try again.');
+        const msg = data?.error || 'Registration failed. Please try again.';
+        setError(msg);
+        toast.error(msg);
       }
     } finally {
       setSubmitting(false);
@@ -37,106 +43,84 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-soc-bg flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-white">Create Account</h1>
-          <p className="text-gray-400 mt-1">Join the ThreatLens SOC platform</p>
+    <AuthLayout title="Create account" subtitle="Join the ThreatLens AI security operations platform">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/25 text-sm text-red-300">
+            {error}
+          </div>
+        )}
+
+        {fieldErrors.length > 0 && (
+          <div className="px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-sm text-amber-200 space-y-1">
+            {fieldErrors.map((fe) => (
+              <p key={fe.field}>{fe.message}</p>
+            ))}
+          </div>
+        )}
+
+        <div>
+          <label htmlFor="name" className="block text-sm text-gray-400 mb-1.5">Full Name</label>
+          <input
+            id="name"
+            type="text"
+            required
+            value={form.name}
+            onChange={(e) => updateField('name', e.target.value)}
+            className="input-field"
+          />
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="bg-soc-surface border border-soc-border rounded-xl p-6 space-y-4"
-        >
-          {error && (
-            <div className="px-3 py-2 rounded-lg bg-soc-critical/10 border border-soc-critical/30 text-sm text-red-300">
-              {error}
-            </div>
-          )}
+        <div>
+          <label htmlFor="email" className="block text-sm text-gray-400 mb-1.5">Email</label>
+          <input
+            id="email"
+            type="email"
+            required
+            value={form.email}
+            onChange={(e) => updateField('email', e.target.value)}
+            className="input-field"
+          />
+        </div>
 
-          {fieldErrors.length > 0 && (
-            <div className="px-3 py-2 rounded-lg bg-soc-warning/10 border border-soc-warning/30 text-sm text-amber-200 space-y-1">
-              {fieldErrors.map((fe) => (
-                <p key={fe.field}>{fe.message}</p>
-              ))}
-            </div>
-          )}
+        <div>
+          <label htmlFor="password" className="block text-sm text-gray-400 mb-1.5">Password</label>
+          <input
+            id="password"
+            type="password"
+            required
+            minLength={8}
+            value={form.password}
+            onChange={(e) => updateField('password', e.target.value)}
+            className="input-field"
+          />
+          <p className="text-xs text-gray-600 mt-1.5">Min 8 characters, include a letter and number</p>
+        </div>
 
-          <div>
-            <label htmlFor="name" className="block text-sm text-gray-400 mb-1">
-              Full Name
-            </label>
-            <input
-              id="name"
-              type="text"
-              required
-              value={form.name}
-              onChange={(e) => updateField('name', e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-soc-bg border border-soc-border text-white focus:outline-none focus:border-soc-accent"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="email" className="block text-sm text-gray-400 mb-1">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={form.email}
-              onChange={(e) => updateField('email', e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-soc-bg border border-soc-border text-white focus:outline-none focus:border-soc-accent"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm text-gray-400 mb-1">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              minLength={8}
-              value={form.password}
-              onChange={(e) => updateField('password', e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-soc-bg border border-soc-border text-white focus:outline-none focus:border-soc-accent"
-            />
-            <p className="text-xs text-gray-500 mt-1">Min 8 chars, include a letter and number</p>
-          </div>
-
-          <div>
-            <label htmlFor="role" className="block text-sm text-gray-400 mb-1">
-              Role
-            </label>
-            <select
-              id="role"
-              value={form.role}
-              onChange={(e) => updateField('role', e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-soc-bg border border-soc-border text-white focus:outline-none focus:border-soc-accent"
-            >
-              <option value="viewer">Viewer — read-only access</option>
-              <option value="analyst">Analyst — investigate incidents</option>
-            </select>
-          </div>
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full py-2.5 rounded-lg bg-soc-accent text-soc-bg font-medium hover:bg-soc-accent/90 disabled:opacity-50 transition-colors"
+        <div>
+          <label htmlFor="role" className="block text-sm text-gray-400 mb-1.5">Role</label>
+          <select
+            id="role"
+            value={form.role}
+            onChange={(e) => updateField('role', e.target.value)}
+            className="input-field"
           >
-            {submitting ? 'Creating account...' : 'Create Account'}
-          </button>
-        </form>
+            <option value="analyst">Analyst — investigate incidents & approve actions</option>
+            <option value="admin">Admin — full SOC platform access</option>
+          </select>
+        </div>
 
-        <p className="text-center text-sm text-gray-500 mt-4">
-          Already have an account?{' '}
-          <Link to="/login" className="text-soc-accent hover:underline">
-            Sign in
-          </Link>
-        </p>
-      </div>
-    </div>
+        <button type="submit" disabled={submitting} className="btn-primary w-full mt-2">
+          {submitting ? 'Creating account…' : 'Create Account'}
+        </button>
+      </form>
+
+      <p className="text-center text-sm text-gray-500 mt-6">
+        Already have an account?{' '}
+        <Link to="/login" className="text-soc-accent hover:underline font-medium">
+          Sign in
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }

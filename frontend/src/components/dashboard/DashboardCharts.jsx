@@ -15,16 +15,17 @@ import {
 import { severityChartData, statusChartData, typeChartData } from '../../utils/chartHelpers';
 
 const tooltipStyle = {
-  backgroundColor: '#1a2332',
-  border: '1px solid #2d3748',
-  borderRadius: '8px',
+  backgroundColor: 'rgba(12, 20, 38, 0.95)',
+  border: '1px solid rgba(34, 211, 238, 0.2)',
+  borderRadius: '12px',
   color: '#e5e7eb',
+  backdropFilter: 'blur(8px)',
 };
 
 function ChartShell({ title, children, className = '' }) {
   return (
-    <div className={`bg-soc-surface border border-soc-border rounded-xl p-5 ${className}`}>
-      <h3 className="text-sm font-medium text-gray-300 mb-4">{title}</h3>
+    <div className={`glass-panel ${className}`}>
+      <h3 className="text-sm font-semibold text-white mb-4">{title}</h3>
       <div className="h-64">{children}</div>
     </div>
   );

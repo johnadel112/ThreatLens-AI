@@ -3,7 +3,9 @@ import { Link, useParams } from 'react-router-dom';
 import { getIncident, getAgentOutputs, investigateIncident } from '../api/incidents';
 import { useAuth } from '../context/AuthContext';
 import { usePolling } from '../hooks/usePolling';
-import AgentActivityPanel from '../components/incidents/AgentActivityPanel';
+import AgentWorkflow from '../components/agents/AgentWorkflow';
+import GlassCard from '../components/ui/GlassCard';
+import PageHeader from '../components/ui/PageHeader';
 import SeverityBadge from '../components/ui/SeverityBadge';
 
 export default function AgentActivity() {
@@ -40,11 +42,7 @@ export default function AgentActivity() {
     fetchData();
   }, [fetchData]);
 
-  usePolling(
-    fetchData,
-    2000,
-    incident?.investigationStatus === 'running' || investigating
-  );
+  usePolling(fetchData, 2000, incident?.investigationStatus === 'running' || investigating);
 
   async function handleInvestigate() {
     setInvestigating(true);
@@ -61,7 +59,7 @@ export default function AgentActivity() {
     }
   }
 
-  if (loading) return <p className="text-gray-500">Loading agent activity...</p>;
+  if (loading) return <p className="text-gray-500">Loading agent pipeline…</p>;
 
   return (
     <div>
@@ -69,42 +67,43 @@ export default function AgentActivity() {
         ← Back to incident
       </Link>
 
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-white">Agent Activity</h2>
-          <p className="text-gray-400 mt-1">{incident?.title}</p>
-          <div className="flex items-center gap-2 mt-2">
+      <PageHeader
+        title="AI Investigation Engine"
+        subtitle={incident?.title}
+        badge={
+          <div className="flex items-center gap-2 mb-2">
             <SeverityBadge severity={incident?.severity} />
             <span className="text-xs text-gray-500 capitalize">
-              Investigation: {incident?.investigationStatus?.replace(/_/g, ' ')}
+              {incident?.investigationStatus?.replace(/_/g, ' ')}
             </span>
           </div>
-        </div>
-        {canInvestigate && (
-          <button
-            type="button"
-            onClick={handleInvestigate}
-            disabled={investigating}
-            className="px-4 py-2 rounded-lg text-sm bg-soc-accent/10 border border-soc-accent/30 text-soc-accent hover:bg-soc-accent/20 disabled:opacity-50"
-          >
-            {investigating ? 'Running workflow...' : 'Run AI Workflow'}
-          </button>
-        )}
-      </div>
+        }
+        actions={
+          canInvestigate && (
+            <button
+              type="button"
+              onClick={handleInvestigate}
+              disabled={investigating}
+              className="btn-primary text-sm"
+            >
+              {investigating ? 'Running workflow…' : 'Run AI Workflow'}
+            </button>
+          )
+        }
+      />
 
       {error && (
-        <div className="mb-4 px-4 py-3 rounded-lg bg-soc-critical/10 border border-soc-critical/30 text-red-300 text-sm">
+        <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/25 text-red-300 text-sm">
           {error}
         </div>
       )}
 
-      <div className="bg-soc-surface border border-soc-border rounded-xl p-6">
-        <h3 className="text-sm font-medium text-gray-300 mb-4">Multi-Agent Workflow</h3>
-        <p className="text-xs text-gray-500 mb-4">
+      <GlassCard>
+        <p className="text-xs text-gray-500 mb-6 font-mono">
           Triage → Investigation → Classification → Mitigation → Report → Reviewer
         </p>
-        <AgentActivityPanel outputs={agentOutputs} showAllAgents />
-      </div>
+        <AgentWorkflow outputs={agentOutputs} showAllAgents />
+      </GlassCard>
     </div>
   );
 }

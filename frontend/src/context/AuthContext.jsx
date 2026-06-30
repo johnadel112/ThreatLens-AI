@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import * as authApi from '../api/auth';
+import * as liveEventsApi from '../api/liveEvents';
 
 const AuthContext = createContext(null);
 
@@ -15,6 +16,7 @@ function loadStoredUser() {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(loadStoredUser);
   const [loading, setLoading] = useState(!!localStorage.getItem('token'));
+  const [liveMonitoring, setLiveMonitoring] = useState(false);
 
   const persistSession = useCallback((token, nextUser) => {
     localStorage.setItem('token', token);
@@ -26,6 +28,25 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
+    setLiveMonitoring(false);
+  }, []);
+
+  const activateLiveMonitoring = useCallback(async () => {
+    try {
+      const status = await liveEventsApi.startLiveEvents();
+      setLiveMonitoring(status.active === true);
+    } catch {
+      setLiveMonitoring(false);
+    }
+  }, []);
+
+  const deactivateLiveMonitoring = useCallback(async () => {
+    try {
+      await liveEventsApi.stopLiveEvents();
+    } catch {
+      // ignore — session may already be cleared
+    }
+    setLiveMonitoring(false);
   }, []);
 
   useEffect(() => {
@@ -37,47 +58,60 @@ export function AuthProvider({ children }) {
 
     authApi
       .getMe()
-      .then((profile) => {
+      .then(async (profile) => {
         setUser(profile);
         localStorage.setItem('user', JSON.stringify(profile));
+        await activateLiveMonitoring();
       })
       .catch(() => clearSession())
       .finally(() => setLoading(false));
-  }, [clearSession]);
+  }, [clearSession, activateLiveMonitoring]);
 
   const login = useCallback(
     async (email, password) => {
       const data = await authApi.login(email, password);
       persistSession(data.token, data.user);
+      try {
+        await activateLiveMonitoring();
+      } catch {
+        // Live events optional — login must not fail if generator route is unavailable
+      }
       return data.user;
     },
-    [persistSession]
+    [persistSession, activateLiveMonitoring]
   );
 
   const register = useCallback(
     async (payload) => {
       const data = await authApi.register(payload);
       persistSession(data.token, data.user);
+      try {
+        await activateLiveMonitoring();
+      } catch {
+        // Live events optional until backend is redeployed
+      }
       return data.user;
     },
-    [persistSession]
+    [persistSession, activateLiveMonitoring]
   );
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    await deactivateLiveMonitoring();
     clearSession();
-  }, [clearSession]);
+  }, [clearSession, deactivateLiveMonitoring]);
 
   const value = useMemo(
     () => ({
       user,
       loading,
       isAuthenticated: !!user,
+      liveMonitoring,
       login,
       register,
       logout,
       hasRole: (...roles) => roles.includes(user?.role),
     }),
-    [user, loading, login, register, logout]
+    [user, loading, liveMonitoring, login, register, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

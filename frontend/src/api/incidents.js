@@ -25,9 +25,9 @@ export async function getAgentOutputs(id) {
   return data;
 }
 
-export async function refreshReport(incidentId) {
-  const { data } = await client.post(`/ai/report/${incidentId}`);
-  return data;
+export async function generateIncidentReport(id) {
+  const { data } = await client.post(`/incidents/${id}/report`);
+  return data.report;
 }
 
 export async function getIncidentStats() {

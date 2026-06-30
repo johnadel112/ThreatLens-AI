@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getIncidents } from '../api/incidents';
+import { usePolling } from '../hooks/usePolling';
+import { FolderKanban } from 'lucide-react';
+import PageHeader from '../components/ui/PageHeader';
+import EmptyState from '../components/ui/EmptyState';
+import { TableSkeleton } from '../components/ui/LoadingSkeleton';
 import SeverityBadge from '../components/ui/SeverityBadge';
 
 const SEVERITIES = ['', 'low', 'medium', 'high', 'critical'];
@@ -61,6 +66,8 @@ export default function Incidents() {
     fetchIncidents();
   }, [fetchIncidents]);
 
+  usePolling(fetchIncidents, 5000, true);
+
   function updateFilter(key, value) {
     setPage(1);
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -68,21 +75,15 @@ export default function Incidents() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-white">Incidents</h2>
-          <p className="text-gray-400 mt-1">
-            Related alerts grouped into investigation cases
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={fetchIncidents}
-          className="px-4 py-2 rounded-lg bg-soc-surface border border-soc-border text-sm text-gray-300 hover:text-white transition-colors"
-        >
-          Refresh
-        </button>
-      </div>
+      <PageHeader
+        title="Security Incidents"
+        subtitle="Related alerts grouped into investigation cases"
+        actions={
+          <button type="button" onClick={fetchIncidents} className="btn-ghost text-sm py-2">
+            Refresh
+          </button>
+        }
+      />
 
       <div className="bg-soc-surface border border-soc-border rounded-xl p-4 mb-6 grid grid-cols-1 md:grid-cols-3 gap-3">
         <input
@@ -128,7 +129,7 @@ export default function Incidents() {
         <div className="bg-soc-surface border border-soc-border rounded-xl p-8 text-center">
           <p className="text-gray-400">No incidents yet.</p>
           <p className="text-sm text-gray-600 mt-2">
-            Run the attack simulator to generate alerts that group into incidents.
+            Incidents appear when related alerts are grouped from your live event stream.
           </p>
         </div>
       ) : (

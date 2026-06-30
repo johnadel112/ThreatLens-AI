@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getAlerts, updateAlertStatus } from '../api/alerts';
 import { useAuth } from '../context/AuthContext';
+import { usePolling } from '../hooks/usePolling';
+import { Bell } from 'lucide-react';
+import PageHeader from '../components/ui/PageHeader';
+import EmptyState from '../components/ui/EmptyState';
+import { TableSkeleton } from '../components/ui/LoadingSkeleton';
 import SeverityBadge from '../components/ui/SeverityBadge';
 import StatusBadge from '../components/ui/StatusBadge';
 
@@ -89,6 +94,8 @@ export default function Alerts() {
     fetchAlerts();
   }, [fetchAlerts]);
 
+  usePolling(fetchAlerts, 5000, true);
+
   function updateFilter(key, value) {
     setPage(1);
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -108,21 +115,15 @@ export default function Alerts() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-white">Alerts</h2>
-          <p className="text-gray-400 mt-1">
-            Rule-based detections from the security event pipeline
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={fetchAlerts}
-          className="px-4 py-2 rounded-lg bg-soc-surface border border-soc-border text-sm text-gray-300 hover:text-white transition-colors"
-        >
-          Refresh
-        </button>
-      </div>
+      <PageHeader
+        title="Security Alerts"
+        subtitle="Rule-based detections from your live event pipeline"
+        actions={
+          <button type="button" onClick={fetchAlerts} className="btn-ghost text-sm py-2">
+            Refresh
+          </button>
+        }
+      />
 
       <div className="bg-soc-surface border border-soc-border rounded-xl p-4 mb-6 grid grid-cols-1 md:grid-cols-3 gap-3">
         <input
@@ -169,7 +170,7 @@ export default function Alerts() {
           <div className="bg-soc-surface border border-soc-border rounded-xl p-8 text-center">
             <p className="text-gray-400">No alerts yet.</p>
             <p className="text-sm text-gray-600 mt-2">
-              Run <code className="text-soc-accent">npm run attack</code> in the simulator to generate detections.
+              Live monitoring will create alerts when detection rules trigger.
             </p>
           </div>
         ) : (
