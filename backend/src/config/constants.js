@@ -8,24 +8,18 @@ export const ROLE_LIST = Object.values(ROLES);
 
 export const PUBLIC_REGISTER_ROLES = [ROLES.VIEWER, ROLES.ANALYST];
 
-export const SEVERITIES = ['low', 'medium', 'high', 'critical'];
+import { ACCEPTED_EVENT_TYPES, EVENT_TYPES } from './eventTypes.js';
+
+export { ACCEPTED_EVENT_TYPES, EVENT_TYPES };
+
+export const SEVERITIES = ['info', 'low', 'medium', 'high', 'critical'];
 export const SEVERITY = {
+  INFO: 'info',
   LOW: 'low',
   MEDIUM: 'medium',
   HIGH: 'high',
   CRITICAL: 'critical',
 };
-
-export const EVENT_TYPES = [
-  'login_failed',
-  'login_success',
-  'file_download',
-  'network_access',
-  'permission_change',
-  'logout',
-  'file_upload',
-  'admin_action',
-];
 
 export const INCIDENT_STATUSES = ['new', 'investigating', 'contained', 'resolved', 'closed'];
 
@@ -38,6 +32,7 @@ export const INVESTIGATION_STATUSES = [
 ];
 
 export const SEVERITY_RANK = {
+  info: 0,
   low: 1,
   medium: 2,
   high: 3,
@@ -50,3 +45,23 @@ export function maxSeverity(severities) {
     'low'
   );
 }
+
+export const PLAYBOOK_ACTION_TYPES = [
+  'lock_account',
+  'block_ip',
+  'force_password_reset',
+  'isolate_host',
+  'notify_user',
+  'escalate',
+];
+
+export const PLAYBOOK_STATUSES = ['pending', 'approved', 'rejected', 'executed', 'failed'];
+
+export const PLAYBOOK_PRIORITIES = ['low', 'medium', 'high'];
+
+export const AUDIT_ACTIONS = [
+  'playbook_created',
+  'playbook_approved',
+  'playbook_rejected',
+  'playbook_executed',
+];

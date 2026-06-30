@@ -8,6 +8,9 @@ import eventsRoutes from './routes/events.routes.js';
 import alertsRoutes from './routes/alerts.routes.js';
 import incidentsRoutes from './routes/incidents.routes.js';
 import aiRoutes from './routes/ai.routes.js';
+import playbooksRoutes from './routes/playbooks.routes.js';
+import dashboardRoutes from './routes/dashboard.routes.js';
+import reportsRoutes from './routes/reports.routes.js';
 
 const app = express();
 
@@ -40,6 +43,9 @@ app.use('/api/events', eventsRoutes);
 app.use('/api/alerts', alertsRoutes);
 app.use('/api/incidents', incidentsRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/playbooks', playbooksRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/reports', reportsRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Not found' });

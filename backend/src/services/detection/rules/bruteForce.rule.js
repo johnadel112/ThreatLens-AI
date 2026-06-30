@@ -1,6 +1,6 @@
+import { DETECTION_EVENT_GROUPS } from '../../../config/eventTypes.js';
 import {
   buildAlertPayload,
-  countRecentEvents,
   queryRecentEvents,
   windowStart,
 } from '../helpers.js';
@@ -8,7 +8,7 @@ import {
 export const bruteForceRule = {
   id: 'brute_force_v1',
   name: 'Brute Force Login Attempt',
-  eventTypes: ['login_failed'],
+  eventTypes: DETECTION_EVENT_GROUPS.failedAuth,
   severity: 'high',
   windowMinutes: 5,
   threshold: 5,
@@ -57,7 +57,7 @@ export const bruteForceRule = {
     const since = windowStart(until, this.windowMinutes);
 
     const failedEvents = await queryRecentEvents({
-      eventType: 'login_failed',
+      eventTypes: DETECTION_EVENT_GROUPS.failedAuth,
       username: event.username,
       ip: event.ip,
       since,

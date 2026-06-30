@@ -1,113 +1,132 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import RoleBadge from '../components/ui/RoleBadge';
+import { getDashboardStats } from '../api/dashboard';
 import client from '../api/client';
+import RoleBadge from '../components/ui/RoleBadge';
+import {
+  EventTimelineChart,
+  EventTypeChart,
+  KpiGrid,
+  SeverityCharts,
+  StatusPieCharts,
+} from '../components/dashboard/DashboardCharts';
 
-function StatusCard({ label, status, detail }) {
-  const isOk = status === 'ok' || status === 'connected';
+function ServiceStatus({ backend, ai }) {
+  const items = [
+    { label: 'Backend', status: backend?.status, detail: backend?.database },
+    { label: 'AI Service', status: ai?.status, detail: ai?.llmEnabled ? 'LLM enabled' : 'Fallback mode' },
+  ];
+
   return (
-    <div className="bg-soc-surface border border-soc-border rounded-xl p-5">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-gray-400">{label}</span>
-        <span
-          className={`w-2 h-2 rounded-full ${isOk ? 'bg-soc-success' : 'bg-soc-critical'}`}
-        />
-      </div>
-      <p className="text-lg font-semibold text-white capitalize">{status}</p>
-      {detail && <p className="text-xs text-gray-500 mt-1">{detail}</p>}
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {items.map((item) => {
+        const ok = item.status === 'ok';
+        return (
+          <div key={item.label} className="flex items-center gap-3 px-4 py-3 rounded-lg bg-soc-bg border border-soc-border">
+            <span className={`w-2 h-2 rounded-full ${ok ? 'bg-soc-success' : 'bg-soc-critical'}`} />
+            <div>
+              <p className="text-sm text-white">{item.label}</p>
+              <p className="text-xs text-gray-500 capitalize">{item.detail || item.status}</p>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const [stats, setStats] = useState(null);
   const [backend, setBackend] = useState(null);
   const [ai, setAi] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    async function checkServices() {
+    async function load() {
       try {
-        const { data } = await client.get('/health');
-        setBackend(data);
-      } catch {
-        setBackend({ status: 'unreachable' });
-      }
+        const [dashboardStats, healthRes] = await Promise.all([
+          getDashboardStats(),
+          client.get('/health'),
+        ]);
+        setStats(dashboardStats);
+        setBackend(healthRes.data);
 
-      try {
-        const res = await fetch('http://localhost:8000/health');
-        setAi(await res.json());
-      } catch {
-        setAi({ status: 'unreachable' });
+        try {
+          const res = await fetch('http://localhost:8000/health');
+          setAi(await res.json());
+        } catch {
+          setAi({ status: 'unreachable' });
+        }
+      } catch (err) {
+        setError(err.response?.data?.error || 'Failed to load dashboard');
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     }
 
-    checkServices();
+    load();
   }, []);
 
   return (
     <div>
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-white">Dashboard</h2>
-        <p className="text-gray-400 mt-1">
-          Welcome back, {user?.name}. Event ingestion is live — view raw logs on the Events page.
-        </p>
-      </div>
-
-      <div className="bg-soc-surface border border-soc-border rounded-xl p-5 mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
-          <p className="text-sm text-gray-400">Signed in as</p>
-          <p className="text-lg font-semibold text-white">{user?.email}</p>
+          <h2 className="text-2xl font-bold text-white">SOC Dashboard</h2>
+          <p className="text-gray-400 mt-1">
+            Welcome back, {user?.name}. Real-time overview of events, alerts, and incidents.
+          </p>
         </div>
-        <RoleBadge role={user?.role} />
+        <div className="flex items-center gap-3">
+          <RoleBadge role={user?.role} />
+          <Link
+            to="/reports"
+            className="px-4 py-2 rounded-lg text-sm bg-soc-accent/10 border border-soc-accent/30 text-soc-accent hover:bg-soc-accent/20"
+          >
+            View Reports
+          </Link>
+        </div>
       </div>
 
-      {loading ? (
-        <p className="text-gray-500">Checking services...</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <StatusCard label="Frontend" status="ok" detail="React + Vite + Tailwind" />
-          <StatusCard
-            label="Backend API"
-            status={backend?.status || 'unknown'}
-            detail={backend?.database ? `DB: ${backend.database}` : backend?.service}
-          />
-          <StatusCard
-            label="AI Service"
-            status={ai?.status || 'unknown'}
-            detail={ai?.service}
-          />
+      {error && (
+        <div className="mb-6 px-4 py-3 rounded-lg bg-soc-critical/10 border border-soc-critical/30 text-red-300 text-sm">
+          {error}
         </div>
       )}
 
-      <div className="bg-soc-surface border border-soc-border rounded-xl p-6">
-        <h3 className="text-sm font-medium text-gray-300 mb-4">Coming in Week 5+</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { label: '✓ Event Ingestion', done: true },
-            { label: '✓ Event Simulator', done: true },
-            { label: '✓ Detection Engine', done: true },
-            { label: '✓ Incident Management', done: true },
-            { label: '✓ Basic AI Integration', done: true },
-          ].map(({ label, done }) => (
-            <div
-              key={label}
-              className={`px-3 py-2 rounded-lg text-xs text-center ${
-                done
-                  ? 'bg-soc-success/10 text-soc-success border border-soc-success/20'
-                  : 'bg-white/5 text-gray-500'
-              }`}
-            >
-              {label}
+      {loading ? (
+        <p className="text-gray-500">Loading dashboard...</p>
+      ) : (
+        <div className="space-y-6">
+          <KpiGrid stats={stats} />
+
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <EventTimelineChart timeline={stats?.events?.timeline} />
+            <div className="bg-soc-surface border border-soc-border rounded-xl p-5">
+              <h3 className="text-sm font-medium text-gray-300 mb-4">System Health</h3>
+              <ServiceStatus backend={backend} ai={ai} />
+              <p className="text-xs text-gray-600 mt-4">
+                Generate traffic with{' '}
+                <code className="text-soc-accent">npm run attack</code> in the simulator folder.
+              </p>
             </div>
-          ))}
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <SeverityCharts alerts={stats?.alerts} incidents={stats?.incidents} />
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <StatusPieCharts alerts={stats?.alerts} incidents={stats?.incidents} />
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <EventTypeChart events={stats?.events} />
+          </div>
         </div>
-        <p className="text-xs text-gray-600 mt-4">
-          Run <code className="text-soc-accent">npm run attack</code> in the simulator, then check the Alerts page.
-        </p>
-      </div>
+      )}
     </div>
   );
 }

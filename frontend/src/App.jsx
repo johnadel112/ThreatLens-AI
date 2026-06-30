@@ -7,7 +7,10 @@ import Events from './pages/Events';
 import Alerts from './pages/Alerts';
 import Incidents from './pages/Incidents';
 import IncidentDetail from './pages/IncidentDetail';
+import AgentActivity from './pages/AgentActivity';
 import Login from './pages/Login';
+import Reports from './pages/Reports';
+import ReportDetail from './pages/ReportDetail';
 import Register from './pages/Register';
 
 export default function App() {
@@ -42,6 +45,9 @@ export default function App() {
         <Route path="alerts" element={<Alerts />} />
         <Route path="incidents" element={<Incidents />} />
         <Route path="incidents/:id" element={<IncidentDetail />} />
+        <Route path="incidents/:id/agents" element={<AgentActivity />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="reports/:id" element={<ReportDetail />} />
       </Route>
     </Routes>
   );

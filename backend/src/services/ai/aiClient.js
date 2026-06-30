@@ -18,6 +18,24 @@ export async function requestIncidentSummary(context) {
   return response.json();
 }
 
+export async function requestInvestigationWorkflow(context) {
+  const url = `${config.aiServiceUrl}/investigate/workflow`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(context),
+    signal: AbortSignal.timeout(120000),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`AI service error (${response.status}): ${body}`);
+  }
+
+  return response.json();
+}
+
 export async function checkAiServiceHealth() {
   try {
     const response = await fetch(`${config.aiServiceUrl}/health`, {

@@ -5,3 +5,64 @@
 body {
   @apply bg-soc-bg text-gray-100 antialiased;
 }
+
+.markdown-report h1 {
+  @apply text-2xl font-bold text-white mb-4;
+}
+
+.markdown-report h2 {
+  @apply text-xl font-semibold text-white mt-6 mb-3;
+}
+
+.markdown-report h3 {
+  @apply text-lg font-medium text-gray-200 mt-4 mb-2;
+}
+
+.markdown-report p {
+  @apply text-gray-300 mb-3 leading-relaxed;
+}
+
+.markdown-report ul {
+  @apply list-disc list-inside text-gray-300 mb-3 space-y-1;
+}
+
+.markdown-report li {
+  @apply text-gray-300;
+}
+
+.markdown-report strong {
+  @apply text-white font-semibold;
+}
+
+.markdown-report hr {
+  @apply border-soc-border my-6;
+}
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  aside,
+  header,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  #report-content {
+    border: none !important;
+    background: white !important;
+    color: black !important;
+    padding: 0 !important;
+  }
+
+  .markdown-report h1,
+  .markdown-report h2,
+  .markdown-report h3,
+  .markdown-report p,
+  .markdown-report li,
+  .markdown-report strong {
+    color: black !important;
+  }
+}

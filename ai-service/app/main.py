@@ -9,7 +9,7 @@ from app.routes.investigate import router as investigate_router
 app = FastAPI(
     title="ThreatLens AI Service",
     description="Multi-agent SOC investigation workflow",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 app.add_middleware(
@@ -28,7 +28,7 @@ def health():
     return {
         "status": "ok",
         "service": "threatlens-ai-service",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "model": settings.model_name,
         "llmEnabled": has_llm,

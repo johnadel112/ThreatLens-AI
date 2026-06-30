@@ -7,7 +7,14 @@
     "start": "node scripts/run-normal.js",
     "normal": "node scripts/run-normal.js",
     "attack": "node scripts/run-attack.js",
-    "mixed": "node scripts/run-mixed.js"
+    "mixed": "node scripts/run-mixed.js",
+    "simulate": "node scripts/simulate.js",
+    "simulate:normal": "node scripts/simulate.js --scenario=normal",
+    "simulate:attack": "node scripts/simulate.js --scenario=attack",
+    "simulate:mixed": "node scripts/simulate.js --scenario=mixed",
+    "simulate:edge": "node scripts/run-edge.js",
+    "simulate:stress": "node scripts/run-stress.js",
+    "simulate:full-demo": "node scripts/run-full-demo.js --instant"
   },
   "dependencies": {
     "dotenv": "^16.4.7"

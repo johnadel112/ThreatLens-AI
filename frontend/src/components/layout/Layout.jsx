@@ -7,7 +7,7 @@ const navItems = [
   { to: '/events', label: 'Events' },
   { to: '/alerts', label: 'Alerts' },
   { to: '/incidents', label: 'Incidents' },
-  { to: '/reports', label: 'Reports', disabled: true },
+  { to: '/reports', label: 'Reports' },
 ];
 
 export default function Layout() {

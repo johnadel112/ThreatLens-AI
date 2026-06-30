@@ -1,3 +1,4 @@
+import { DETECTION_EVENT_GROUPS } from '../../../config/eventTypes.js';
 import {
   buildAlertPayload,
   queryRecentEvents,
@@ -7,7 +8,7 @@ import {
 export const suspiciousLoginRule = {
   id: 'suspicious_login_v1',
   name: 'Possible Account Compromise',
-  eventTypes: ['login_success'],
+  eventTypes: DETECTION_EVENT_GROUPS.successfulAuth,
   severity: 'critical',
   windowMinutes: 15,
   failureThreshold: 3,
@@ -53,7 +54,7 @@ export const suspiciousLoginRule = {
     const since = windowStart(until, this.windowMinutes);
 
     const failedEvents = await queryRecentEvents({
-      eventType: 'login_failed',
+      eventTypes: DETECTION_EVENT_GROUPS.failedAuth,
       username: event.username,
       ip: event.ip,
       since,

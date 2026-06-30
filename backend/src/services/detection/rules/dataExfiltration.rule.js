@@ -1,3 +1,4 @@
+import { DETECTION_EVENT_GROUPS } from '../../../config/eventTypes.js';
 import {
   buildAlertPayload,
   queryRecentEvents,
@@ -7,7 +8,7 @@ import {
 export const dataExfiltrationRule = {
   id: 'data_exfil_v1',
   name: 'Possible Data Exfiltration',
-  eventTypes: ['file_download'],
+  eventTypes: DETECTION_EVENT_GROUPS.downloads,
   severity: 'high',
   windowMinutes: 10,
   threshold: 30,
@@ -50,7 +51,7 @@ export const dataExfiltrationRule = {
     const since = windowStart(until, this.windowMinutes);
 
     const downloadEvents = await queryRecentEvents({
-      eventType: 'file_download',
+      eventTypes: DETECTION_EVENT_GROUPS.downloads,
       username: event.username,
       since,
       until,

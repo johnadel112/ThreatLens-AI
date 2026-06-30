@@ -1,5 +1,5 @@
 import { body, query } from 'express-validator';
-import { EVENT_TYPES, SEVERITIES } from '../config/constants.js';
+import { ACCEPTED_EVENT_TYPES, SEVERITIES } from '../config/constants.js';
 
 export const createEventValidator = [
   body('source').trim().notEmpty().withMessage('Source is required').isLength({ max: 100 }),
@@ -7,8 +7,8 @@ export const createEventValidator = [
     .trim()
     .notEmpty()
     .withMessage('Event type is required')
-    .isIn(EVENT_TYPES)
-    .withMessage(`Event type must be one of: ${EVENT_TYPES.join(', ')}`),
+    .isIn(ACCEPTED_EVENT_TYPES)
+    .withMessage('Invalid event type'),
   body('username').optional({ values: 'null' }).trim().isLength({ max: 100 }),
   body('ip').optional({ values: 'null' }).trim().isLength({ max: 45 }),
   body('severity').optional().isIn(SEVERITIES).withMessage('Invalid severity level'),
@@ -19,7 +19,7 @@ export const createEventValidator = [
 export const listEventsValidator = [
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
-  query('eventType').optional().isIn(EVENT_TYPES),
+  query('eventType').optional().isIn(ACCEPTED_EVENT_TYPES),
   query('severity').optional().isIn(SEVERITIES),
   query('username').optional().trim().isLength({ max: 100 }),
   query('ip').optional().trim().isLength({ max: 45 }),

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
-import { EVENT_TYPES, SEVERITIES } from '../config/constants.js';
+import { EVENT_TYPES } from '../config/eventTypes.js';
+import { SEVERITIES } from '../config/constants.js';
 
 const securityEventSchema = new mongoose.Schema(
   {

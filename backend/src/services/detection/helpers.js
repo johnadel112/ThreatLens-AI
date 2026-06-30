@@ -6,11 +6,25 @@ export function windowStart(timestamp, windowMinutes) {
   return new Date(ts.getTime() - windowMinutes * 60 * 1000);
 }
 
-export async function queryRecentEvents({ eventType, username, ip, since, until, limit = 200 }) {
+export async function queryRecentEvents({
+  eventType,
+  eventTypes,
+  username,
+  ip,
+  since,
+  until,
+  limit = 200,
+}) {
+  const types = eventTypes || (eventType ? [eventType] : []);
   const filter = {
-    eventType,
     timestamp: { $gte: since, $lte: until },
   };
+
+  if (types.length === 1) {
+    filter.eventType = types[0];
+  } else if (types.length > 1) {
+    filter.eventType = { $in: types };
+  }
 
   if (username && ip) {
     filter.$or = [{ username }, { ip }];

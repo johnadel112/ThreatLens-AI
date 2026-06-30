@@ -1,17 +1,16 @@
-import { buildNormalTrafficEvents } from '../lib/templates/eventTemplates.js';
-import { parseArgs, runScenario } from '../lib/runner.js';
+import { parseCliArgs, runSimulation } from '../lib/runner.js';
+import { runScenario } from '../lib/scenarios/index.js';
 import { config } from '../config.js';
 
-const args = parseArgs(process.argv);
-const count = parseInt(process.env.NORMAL_EVENT_COUNT || '15', 10);
+const args = parseCliArgs(process.argv);
+const { events, expectations, scenario } = runScenario('normal', { count: args.count || 25 });
 
 console.log(`Backend: ${config.backendUrl}`);
-
-const events = buildNormalTrafficEvents(count);
-
-runScenario({
+runSimulation({
   name: 'Normal Traffic',
+  scenario,
   events,
+  expectations,
   delayMs: args.delayMs,
   dryRun: args.dryRun,
 });

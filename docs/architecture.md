@@ -48,3 +48,10 @@
 - [x] Incidents list and detail pages
 - [x] AI service integration with evidence-based summary (LLM or fallback)
 - [x] POST /api/incidents/:id/investigate and AgentOutput storage
+- [x] LangGraph multi-agent workflow (6 agents)
+- [x] Agent Activity page with workflow stepper
+- [x] PlaybookAction model with approve/reject/execute flow
+- [x] Simulated playbook execution with audit log
+- [x] Mitigation Playbook panel on incident detail
+- [x] SOC dashboard with Recharts (KPIs, severity, status, timeline)
+- [x] Reports page with markdown viewer and export (MD download, print/PDF)

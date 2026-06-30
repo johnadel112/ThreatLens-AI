@@ -1,5 +1,6 @@
 import SecurityEvent from '../models/SecurityEvent.js';
 import { runDetection } from '../services/detection/engine.js';
+import { normalizeIncomingEvent } from '../services/events/normalize.js';
 
 function buildEventFilter(query) {
   const filter = {};
@@ -31,17 +32,9 @@ function buildEventFilter(query) {
 
 export async function createEvent(req, res, next) {
   try {
-    const { source, eventType, username, ip, metadata, severity, timestamp } = req.body;
+    const normalized = normalizeIncomingEvent(req.body);
 
-    const event = await SecurityEvent.create({
-      source,
-      eventType,
-      username: username || undefined,
-      ip: ip || undefined,
-      metadata: metadata || {},
-      severity: severity || 'low',
-      timestamp: new Date(timestamp),
-    });
+    const event = await SecurityEvent.create(normalized);
 
     const alerts = await runDetection(event);
 

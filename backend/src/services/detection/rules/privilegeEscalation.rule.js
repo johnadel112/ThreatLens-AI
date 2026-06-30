@@ -1,3 +1,4 @@
+import { DETECTION_EVENT_GROUPS } from '../../../config/eventTypes.js';
 import { buildAlertPayload, findRecentAlert } from '../helpers.js';
 
 const PRECURSOR_RULES = ['suspicious_login_v1', 'brute_force_v1'];
@@ -5,7 +6,7 @@ const PRECURSOR_RULES = ['suspicious_login_v1', 'brute_force_v1'];
 export const privilegeEscalationRule = {
   id: 'priv_esc_v1',
   name: 'Possible Privilege Escalation',
-  eventTypes: ['permission_change'],
+  eventTypes: DETECTION_EVENT_GROUPS.privilegeChange,
   severity: 'critical',
   windowMinutes: 30,
 

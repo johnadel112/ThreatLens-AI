@@ -4,6 +4,8 @@ import { dataExfiltrationRule } from './rules/dataExfiltration.rule.js';
 import { suspiciousAdminRule } from './rules/suspiciousAdmin.rule.js';
 import { portScanRule } from './rules/portScan.rule.js';
 import { privilegeEscalationRule } from './rules/privilegeEscalation.rule.js';
+import { malwareActivityRule } from './rules/malwareActivity.rule.js';
+import { apiAbuseRule } from './rules/apiAbuse.rule.js';
 
 export const ALL_RULES = [
   bruteForceRule,
@@ -12,6 +14,8 @@ export const ALL_RULES = [
   suspiciousAdminRule,
   portScanRule,
   privilegeEscalationRule,
+  malwareActivityRule,
+  apiAbuseRule,
 ];
 
 const rulesByEventType = ALL_RULES.reduce((map, rule) => {

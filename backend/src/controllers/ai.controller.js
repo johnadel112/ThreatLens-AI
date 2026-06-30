@@ -8,7 +8,7 @@ export async function refreshIncidentReport(req, res, next) {
       message: 'SOC report refreshed',
       aiSource: result.aiSource,
       incident: result.incident,
-      agentOutput: result.agentOutput,
+      agentOutputs: result.agentOutputs,
     });
   } catch (err) {
     if (err.status === 404) {

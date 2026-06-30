@@ -20,6 +20,11 @@ export async function investigateIncident(id) {
   return data;
 }
 
+export async function getAgentOutputs(id) {
+  const { data } = await client.get(`/incidents/${id}/agents`);
+  return data;
+}
+
 export async function refreshReport(incidentId) {
   const { data } = await client.post(`/ai/report/${incidentId}`);
   return data;

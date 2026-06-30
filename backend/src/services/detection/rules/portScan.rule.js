@@ -1,3 +1,4 @@
+import { DETECTION_EVENT_GROUPS } from '../../../config/eventTypes.js';
 import {
   buildAlertPayload,
   queryRecentEvents,
@@ -7,7 +8,7 @@ import {
 export const portScanRule = {
   id: 'port_scan_v1',
   name: 'Port Scan / Reconnaissance',
-  eventTypes: ['network_access'],
+  eventTypes: DETECTION_EVENT_GROUPS.recon,
   severity: 'high',
   windowMinutes: 2,
   threshold: 10,
@@ -58,7 +59,7 @@ export const portScanRule = {
     const since = windowStart(until, this.windowMinutes);
 
     const networkEvents = await queryRecentEvents({
-      eventType: 'network_access',
+      eventTypes: DETECTION_EVENT_GROUPS.recon,
       ip: event.ip,
       since,
       until,
