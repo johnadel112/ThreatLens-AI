@@ -26,7 +26,7 @@ export default function Register() {
 
     try {
       await register(form);
-      toast.success('Account created — live monitoring starting');
+      toast.success('Registration successful — live monitoring starting');
       navigate('/', { replace: true });
     } catch (err) {
       const data = err.response?.data;

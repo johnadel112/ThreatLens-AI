@@ -22,7 +22,7 @@ export default function Login() {
 
     try {
       await login(email, password);
-      toast.success('Welcome to ThreatLens AI');
+      toast.success('Login successful');
       navigate(from, { replace: true });
     } catch (err) {
       const msg = err.response?.data?.error || 'Login failed. Please try again.';

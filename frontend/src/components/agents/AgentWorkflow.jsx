@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search, FileSearch, Target, ShieldCheck, FileText, CheckCircle2,
-  ChevronRight, Loader2, AlertTriangle,
+  ChevronRight, Loader2, AlertTriangle, Clock,
 } from 'lucide-react';
 import { AGENT_DESCRIPTIONS, AGENT_LABELS, WORKFLOW_AGENTS } from '../../utils/agents';
 
@@ -22,17 +22,31 @@ const statusConfig = {
   failed: { border: 'border-red-500/40', bg: 'bg-red-500/5', text: 'text-red-300', dot: 'bg-red-400' },
 };
 
+function outputPreview(output) {
+  if (!output) return null;
+  const text = typeof output === 'string' ? output : JSON.stringify(output);
+  const cleaned = text.replace(/\s+/g, ' ').trim();
+  return cleaned.length > 140 ? `${cleaned.slice(0, 140)}…` : cleaned;
+}
+
+function formatAgentTime(value) {
+  if (!value) return null;
+  return new Date(value).toLocaleString();
+}
+
 function AgentStepCard({ agent, index, expanded, onToggle, isLast }) {
   const cfg = statusConfig[agent.status] || statusConfig.waiting;
   const Icon = AGENT_ICONS[agent.agentName] || Search;
   const label = AGENT_LABELS[agent.agentName] || agent.agentName;
   const description = AGENT_DESCRIPTIONS[agent.agentName] || '';
+  const preview = agent.status === 'completed' ? outputPreview(agent.output) : null;
+  const timestamp = formatAgentTime(agent.completedAt || agent.startedAt || agent.createdAt);
 
   return (
     <div className="relative flex gap-4">
       {!isLast && <div className="absolute left-[22px] top-12 bottom-0 w-px bg-gradient-to-b from-white/10 to-transparent" />}
       <div className="relative z-10 shrink-0">
-        <div className={`w-11 h-11 rounded-xl border flex items-center justify-center ${cfg.border} ${cfg.bg} ${agent.status === 'running' ? 'agent-scan overflow-hidden' : ''}`}>
+        <div className={`w-11 h-11 rounded-xl border flex items-center justify-center ${cfg.border} ${cfg.bg} ${agent.status === 'running' ? 'agent-scan overflow-hidden shadow-[0_0_20px_rgba(34,211,238,0.25)]' : ''}`}>
           {agent.status === 'running' ? (
             <Loader2 className="w-5 h-5 text-soc-accent animate-spin" />
           ) : agent.status === 'failed' ? (
@@ -43,19 +57,27 @@ function AgentStepCard({ agent, index, expanded, onToggle, isLast }) {
         </div>
       </div>
       <motion.div layout className={`flex-1 rounded-xl border p-4 mb-4 ${cfg.border} ${cfg.bg}`}>
-        <button type="button" onClick={onToggle} className="w-full text-left">
+        <button type="button" onClick={onToggle} className="w-full text-left" disabled={!agent.output && !agent.error}>
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-mono text-gray-600">AGENT {String(index + 1).padStart(2, '0')}</span>
-                <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot}`} />
+                {timestamp && (
+                  <span className="text-[10px] text-gray-600 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {timestamp}
+                  </span>
+                )}
               </div>
               <p className="text-sm font-semibold text-white mt-1">{label}</p>
               <p className="text-xs text-gray-500 mt-0.5">{description}</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <span className={`text-xs capitalize font-medium ${cfg.text}`}>{agent.status}</span>
-              {agent.output && <ChevronRight className={`w-4 h-4 text-gray-600 transition-transform ${expanded ? 'rotate-90' : ''}`} />}
+              {(agent.output || agent.error) && (
+                <ChevronRight className={`w-4 h-4 text-gray-600 transition-transform ${expanded ? 'rotate-90' : ''}`} />
+              )}
             </div>
           </div>
           {agent.confidence != null && agent.status === 'completed' && (
@@ -63,10 +85,18 @@ function AgentStepCard({ agent, index, expanded, onToggle, isLast }) {
               Confidence: <span className="text-soc-accent font-mono">{Math.round(agent.confidence * 100)}%</span>
             </p>
           )}
-          {agent.error && <p className="text-xs text-red-300 mt-2">{agent.error}</p>}
+          {preview && !expanded && (
+            <p className="text-xs text-gray-500 mt-2 line-clamp-2 leading-relaxed">{preview}</p>
+          )}
+          {agent.error && (
+            <p className="text-xs text-red-300 mt-2 flex items-start gap-1.5">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+              {agent.error}
+            </p>
+          )}
         </button>
         {expanded && agent.output && (
-          <pre className="mt-3 p-3 rounded-lg bg-black/30 border border-white/[0.06] text-xs text-gray-400 overflow-x-auto max-h-52 font-mono">
+          <pre className="mt-3 p-3 rounded-lg bg-black/30 border border-white/[0.06] text-xs text-gray-400 overflow-x-auto max-h-52 font-mono leading-relaxed">
             {typeof agent.output === 'string' ? agent.output : JSON.stringify(agent.output, null, 2)}
           </pre>
         )}
@@ -93,9 +123,15 @@ export default function AgentWorkflow({ outputs = [], showAllAgents = true }) {
   }
 
   const runningIdx = agents.findIndex((a) => a.status === 'running');
+  const allWaiting = agents.every((a) => a.status === 'waiting');
 
   return (
     <div>
+      {allWaiting && (
+        <p className="text-xs text-gray-600 mb-4 text-center">
+          Triage Agent → Investigation Agent → Threat Classification → Mitigation → Report → Reviewer
+        </p>
+      )}
       {runningIdx >= 0 && (
         <div className="mb-4 px-3 py-2 rounded-lg bg-soc-accent/10 border border-soc-accent/20 text-xs text-soc-accent flex items-center gap-2">
           <Loader2 className="w-3.5 h-3.5 animate-spin" />

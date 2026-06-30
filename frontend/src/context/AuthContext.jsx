@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
 import * as authApi from '../api/auth';
 import * as liveEventsApi from '../api/liveEvents';
 
@@ -34,7 +35,11 @@ export function AuthProvider({ children }) {
   const activateLiveMonitoring = useCallback(async () => {
     try {
       const status = await liveEventsApi.startLiveEvents();
-      setLiveMonitoring(status.active === true);
+      const active = status.active === true;
+      setLiveMonitoring(active);
+      if (active) {
+        toast.success('Live monitoring started', { duration: 2500 });
+      }
     } catch {
       setLiveMonitoring(false);
     }
@@ -98,6 +103,7 @@ export function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     await deactivateLiveMonitoring();
     clearSession();
+    toast.success('Signed out successfully');
   }, [clearSession, deactivateLiveMonitoring]);
 
   const value = useMemo(
