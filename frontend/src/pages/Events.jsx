@@ -4,8 +4,10 @@ import { usePolling } from '../hooks/usePolling';
 import PageHeader from '../components/ui/PageHeader';
 import { TableSkeleton } from '../components/ui/LoadingSkeleton';
 import EmptyState from '../components/ui/EmptyState';
+import JsonViewerModal from '../components/ui/JsonViewerModal';
 import { Radio } from 'lucide-react';
 import SeverityBadge from '../components/ui/SeverityBadge';
+import toast from 'react-hot-toast';
 
 const EVENT_TYPES = [
   '',
@@ -26,32 +28,6 @@ function formatTimestamp(value) {
   return new Date(value).toLocaleString();
 }
 
-function MetadataCell({ metadata }) {
-  const [open, setOpen] = useState(false);
-  const text = JSON.stringify(metadata || {}, null, 2);
-
-  if (!metadata || Object.keys(metadata).length === 0) {
-    return <span className="text-gray-600">—</span>;
-  }
-
-  return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="text-xs text-soc-accent hover:underline"
-      >
-        {open ? 'Hide' : 'View JSON'}
-      </button>
-      {open && (
-        <pre className="mt-2 p-2 rounded bg-soc-bg border border-soc-border text-xs text-gray-400 overflow-x-auto max-w-xs">
-          {text}
-        </pre>
-      )}
-    </div>
-  );
-}
-
 export default function Events() {
   const [events, setEvents] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 });
@@ -65,6 +41,7 @@ export default function Events() {
     ip: '',
   });
   const [page, setPage] = useState(1);
+  const [jsonModal, setJsonModal] = useState(null);
 
   const fetchEvents = useCallback(async () => {
     setLoading(true);
@@ -80,7 +57,9 @@ export default function Events() {
       setEvents(data.events);
       setPagination(data.pagination);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load events');
+      const msg = err.response?.data?.error || 'Failed to load events';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -199,18 +178,28 @@ export default function Events() {
                       {formatTimestamp(event.timestamp)}
                     </td>
                     <td>
-                      <code className="text-xs text-soc-accent bg-soc-accent/10 px-2 py-0.5 rounded-md font-mono">
+                      <code className="text-xs text-soc-accent bg-soc-accent/10 px-2 py-0.5 rounded-md font-mono whitespace-nowrap">
                         {event.eventType}
                       </code>
                     </td>
                     <td className="text-gray-300">{event.username || '—'}</td>
-                    <td className="text-gray-400 font-mono text-xs">{event.ip || '—'}</td>
+                    <td className="text-gray-400 font-mono text-xs whitespace-nowrap">{event.ip || '—'}</td>
                     <td className="text-gray-400">{event.source}</td>
                     <td>
                       <SeverityBadge severity={event.severity} />
                     </td>
                     <td>
-                      <MetadataCell metadata={event.metadata} />
+                      {event.metadata && Object.keys(event.metadata).length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => setJsonModal({ title: `${event.eventType} metadata`, data: event.metadata })}
+                          className="text-xs text-soc-accent hover:underline"
+                        >
+                          View JSON
+                        </button>
+                      ) : (
+                        <span className="text-gray-600">—</span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -219,7 +208,7 @@ export default function Events() {
         </div>
 
         {!loading && pagination.total > 0 && (
-          <div className="px-5 py-3 border-t border-white/[0.06] flex items-center justify-between">
+          <div className="px-5 py-3 border-t border-white/[0.06] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <p className="text-xs text-gray-500">
               Showing {(pagination.page - 1) * pagination.limit + 1}–
               {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
@@ -249,6 +238,13 @@ export default function Events() {
         )}
       </div>
       )}
+
+      <JsonViewerModal
+        open={!!jsonModal}
+        title={jsonModal?.title}
+        data={jsonModal?.data}
+        onClose={() => setJsonModal(null)}
+      />
     </div>
   );
 }

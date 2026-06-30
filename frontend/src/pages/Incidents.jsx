@@ -123,36 +123,42 @@ export default function Incidents() {
         </div>
       )}
 
-      {loading ? (
-        <p className="text-gray-500">Loading incidents...</p>
+      {loading && incidents.length === 0 ? (
+        <TableSkeleton rows={4} />
       ) : incidents.length === 0 ? (
-        <div className="bg-soc-surface border border-soc-border rounded-xl p-8 text-center">
-          <p className="text-gray-400">No incidents yet.</p>
-          <p className="text-sm text-gray-600 mt-2">
-            Incidents appear when related alerts are grouped from your live event stream.
-          </p>
-        </div>
+        <EmptyState
+          icon={FolderKanban}
+          title="No incidents yet"
+          description="Incidents appear when related alerts are grouped from your live event stream."
+        />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {incidents.map((incident) => (
             <Link
               key={incident.id}
               to={`/incidents/${incident.id}`}
-              className="bg-soc-surface border border-soc-border rounded-xl p-5 hover:border-soc-accent/40 transition-colors block"
+              className="glass-panel p-5 hover:border-soc-accent/40 transition-colors block"
             >
               <div className="flex flex-wrap items-center gap-2 mb-2">
-                <h3 className="font-semibold text-white">{incident.title}</h3>
+                <h3 className="font-semibold text-white leading-snug">{incident.title}</h3>
                 <SeverityBadge severity={incident.severity} />
                 <IncidentStatusBadge status={incident.status} />
               </div>
-              <div className="flex flex-wrap gap-4 text-xs text-gray-500 mb-3">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mb-3">
                 {incident.username && <span>User: {incident.username}</span>}
-                {incident.ip && <span>IP: <code>{incident.ip}</code></span>}
+                {incident.ip && <span>IP: <code className="text-gray-400">{incident.ip}</code></span>}
                 <span>{incident.alertCount || incident.alerts?.length || 0} alerts</span>
-                <span>{formatTime(incident.createdAt)}</span>
+                <span>{incident.eventCount || incident.events?.length || 0} events</span>
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                <span className="capitalize">
+                  AI: {incident.investigationStatus?.replace(/_/g, ' ') || 'not started'}
+                </span>
+                <span>Created {formatTime(incident.createdAt)}</span>
+                {incident.updatedAt && <span>Updated {formatTime(incident.updatedAt)}</span>}
               </div>
               {incident.assignedAnalyst && (
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-gray-400 mt-2">
                   Assigned: {incident.assignedAnalyst.name}
                 </p>
               )}

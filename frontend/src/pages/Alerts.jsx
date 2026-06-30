@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getAlerts, updateAlertStatus } from '../api/alerts';
 import { useAuth } from '../context/AuthContext';
 import { usePolling } from '../hooks/usePolling';
+import toast from 'react-hot-toast';
 import { Bell } from 'lucide-react';
 import PageHeader from '../components/ui/PageHeader';
 import EmptyState from '../components/ui/EmptyState';
@@ -105,9 +106,12 @@ export default function Alerts() {
     setUpdatingId(alertId);
     try {
       await updateAlertStatus(alertId, status);
+      toast.success(status === 'resolved' ? 'Alert resolved' : 'Alert acknowledged');
       await fetchAlerts();
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to update alert status');
+      const msg = err.response?.data?.error || 'Failed to update alert status';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setUpdatingId(null);
     }
@@ -164,20 +168,23 @@ export default function Alerts() {
       )}
 
       <div className="space-y-3">
-        {loading ? (
-          <p className="text-gray-500">Loading alerts...</p>
+        {loading && alerts.length === 0 ? (
+          <TableSkeleton rows={4} />
         ) : alerts.length === 0 ? (
-          <div className="bg-soc-surface border border-soc-border rounded-xl p-8 text-center">
-            <p className="text-gray-400">No alerts yet.</p>
-            <p className="text-sm text-gray-600 mt-2">
-              Live monitoring will create alerts when detection rules trigger.
-            </p>
-          </div>
+          <EmptyState
+            icon={Bell}
+            title="No alerts yet"
+            description="Live monitoring will create alerts when detection rules trigger on your event stream."
+          />
         ) : (
-          alerts.map((alert) => (
+          alerts.map((alert) => {
+            const isUrgent = alert.severity === 'critical' || alert.severity === 'high';
+            return (
             <div
               key={alert.id}
-              className="bg-soc-surface border border-soc-border rounded-xl p-5 hover:border-soc-accent/30 transition-colors"
+              className={`glass-panel p-5 transition-colors ${
+                isUrgent ? 'border-red-500/20 bg-red-500/[0.02]' : 'hover:border-soc-accent/20'
+              }`}
             >
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                 <div className="flex-1">
@@ -225,7 +232,8 @@ export default function Alerts() {
                 </div>
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
 
