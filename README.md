@@ -148,6 +148,10 @@ See [docs/deployment.md](docs/deployment.md) for full Docker documentation.
 
 Full guide: [docs/cloud-deployment.md](docs/cloud-deployment.md)
 
+**Atlas + Vercel + Railway:** [docs/cloud-deployment-atlas-vercel-railway.md](docs/cloud-deployment-atlas-vercel-railway.md)
+
+**No credit card / no Atlas?** [docs/cloud-deployment-no-atlas.md](docs/cloud-deployment-no-atlas.md) — **stable HTTPS URL:** [docs/cloudflare-tunnel.md](docs/cloudflare-tunnel.md) · **always-on VM:** [docs/oracle-cloud-vm.md](docs/oracle-cloud-vm.md).
+
 ## Health Checks
 
 | Service | Endpoint |

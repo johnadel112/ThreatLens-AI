@@ -1,5 +1,7 @@
 # ThreatLens AI — Cloud Deployment (Render + MongoDB Atlas)
 
+> **Don't want Atlas or a credit card?** See **[cloud-deployment-no-atlas.md](./cloud-deployment-no-atlas.md)** for free options using Docker MongoDB + Cloudflare Tunnel or Oracle Cloud VM.
+
 Deploy ThreatLens AI to the cloud using **Render** for application services and **MongoDB Atlas** for the database (free tiers available).
 
 ## Architecture (cloud)
@@ -163,9 +165,17 @@ curl https://threatlens-frontend.onrender.com
 
 ---
 
-## Alternative: Railway
+## Alternative: Railway + Vercel + Atlas
 
-Railway supports Docker deploys from the same Dockerfiles. Import the GitHub repo and create three services from `backend/`, `ai-service/`, and `frontend/` Dockerfiles with the same environment variables as above.
+Step-by-step guide: **[cloud-deployment-atlas-vercel-railway.md](./cloud-deployment-atlas-vercel-railway.md)**
+
+- **Atlas** — MongoDB M0
+- **Railway** — `backend/` and `ai-service/` Docker services
+- **Vercel** — `frontend/` with `VITE_API_URL`
+
+## Alternative: Railway (Render-style)
+
+Railway supports Docker deploys from the same Dockerfiles. Import the GitHub repo and create two services from `backend/` and `ai-service/` with the same environment variables as above. Use Vercel or Railway for the frontend.
 
 ---
 

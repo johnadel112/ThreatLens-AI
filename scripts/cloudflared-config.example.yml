@@ -1,0 +1,10 @@
+# Copy to %USERPROFILE%\.cloudflared\config.yml and replace placeholders.
+# Or run: .\scripts\start-cloudflare-tunnel.ps1 -Hostname threatlens.yourdomain.com
+
+tunnel: YOUR-TUNNEL-ID
+credentials-file: C:\Users\Hp\.cloudflared\YOUR-TUNNEL-ID.json
+
+ingress:
+  - hostname: threatlens.yourdomain.com
+    service: http://localhost:3000
+  - service: http_status:404
