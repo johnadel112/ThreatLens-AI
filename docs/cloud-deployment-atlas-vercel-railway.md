@@ -181,14 +181,15 @@ Add **before** first deploy:
 
 | Name | Value |
 |------|-------|
-| `VITE_API_URL` | `https://YOUR-BACKEND-URL/api` |
+| `VITE_API_URL` | `https://YOUR-BACKEND-URL/api` (optional) |
 
-Example:
-```
-VITE_API_URL=https://threatlens-backend-production.up.railway.app/api
+Also edit `frontend/vercel.json` — set the `/api` proxy destination to your Railway backend URL:
+
+```json
+"destination": "https://YOUR-BACKEND-URL/api/:path*"
 ```
 
-> `VITE_` vars are baked in at build time. If you change the backend URL later, **redeploy** Vercel.
+This proxy lets login work via `/api` on your Vercel domain (no CORS issues).
 
 ### 4. Deploy
 
