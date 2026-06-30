@@ -6,32 +6,44 @@ function levelMeta(score) {
   return { label: 'Low', color: 'text-emerald-300', bar: 'bg-emerald-500', glow: '', badge: 'bg-emerald-500/15 border-emerald-500/30' };
 }
 
+function openSeverityCount(bySeverity = [], severity) {
+  return bySeverity.find((s) => s.severity === severity)?.count || 0;
+}
+
+/** Score based on OPEN threats only — resolved items should not inflate the meter. */
 export function computeThreatLevel(stats) {
   if (!stats) return 0;
 
-  const criticalIncidents =
-    stats.incidents?.bySeverity?.find((s) => s.severity === 'critical')?.count || 0;
-  const highIncidents =
-    stats.incidents?.bySeverity?.find((s) => s.severity === 'high')?.count || 0;
-  const criticalAlerts =
-    stats.alerts?.bySeverity?.find((s) => s.severity === 'critical')?.count || 0;
-  const highAlerts =
-    stats.alerts?.bySeverity?.find((s) => s.severity === 'high')?.count || 0;
+  const openCriticalIncidents = openSeverityCount(stats.incidents?.openBySeverity, 'critical');
+  const openHighIncidents = openSeverityCount(stats.incidents?.openBySeverity, 'high');
+  const openCriticalAlerts = openSeverityCount(stats.alerts?.openBySeverity, 'critical');
+  const openHighAlerts = openSeverityCount(stats.alerts?.openBySeverity, 'high');
   const openIncidents = stats.incidents?.openCount || 0;
   const openAlerts = stats.alerts?.openCount || 0;
   const pendingPlaybooks = stats.playbooks?.pendingCount || 0;
 
-  let score = 0;
-  score += Math.min(criticalIncidents * 22, 44);
-  score += Math.min(highIncidents * 10, 20);
-  score += Math.min(criticalAlerts * 12, 24);
-  score += Math.min(highAlerts * 5, 15);
-  score += Math.min(openIncidents * 4, 12);
-  score += Math.min(openAlerts * 1.5, 9);
-  score += Math.min(pendingPlaybooks * 2, 6);
+  // Fallback for older API responses without openBySeverity
+  const criticalIncidents = openCriticalIncidents || openSeverityCount(stats.incidents?.bySeverity, 'critical');
+  const highIncidents = openHighIncidents || openSeverityCount(stats.incidents?.bySeverity, 'high');
+  const criticalAlerts = openCriticalAlerts || openSeverityCount(stats.alerts?.bySeverity, 'critical');
+  const highAlerts = openHighAlerts || openSeverityCount(stats.alerts?.bySeverity, 'high');
 
-  // Diminishing returns — harder to hit 100
-  const raw = Math.round(score * 0.85);
+  let score = 0;
+  score += Math.min(criticalIncidents * 14, 28);
+  score += Math.min(highIncidents * 6, 18);
+  score += Math.min(criticalAlerts * 8, 20);
+  score += Math.min(highAlerts * 3, 12);
+  score += Math.min(Math.max(openIncidents - criticalIncidents - highIncidents, 0) * 2, 6);
+  score += Math.min(Math.max(openAlerts - criticalAlerts - highAlerts, 0) * 0.5, 5);
+  score += Math.min(pendingPlaybooks * 1.5, 6);
+
+  const raw = Math.round(score * 0.72);
+
+  // Reserve 91–100 for truly severe posture: multiple open critical incidents AND alerts
+  if (raw >= 91 && (openCriticalIncidents < 2 || openCriticalAlerts < 2)) {
+    return Math.min(90, raw);
+  }
+
   return Math.min(100, Math.max(0, raw));
 }
 
@@ -42,7 +54,7 @@ export default function ThreatLevelIndicator({ score = 0 }) {
     <div className={`glass-panel p-5 ${meta.glow}`}>
       <div className="flex items-center justify-between mb-3 gap-2">
         <p className="text-sm text-gray-400">Threat Level</p>
-        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${meta.badge} ${meta.color}`}>
+        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap ${meta.badge} ${meta.color}`}>
           {meta.label}
         </span>
       </div>
@@ -57,7 +69,7 @@ export default function ThreatLevelIndicator({ score = 0 }) {
         />
       </div>
       <p className="text-[11px] text-gray-600 mt-3 leading-relaxed">
-        Based on open incidents, alert severity, and playbook queue.
+        Based on open incidents, unresolved alerts, and playbook queue.
       </p>
     </div>
   );

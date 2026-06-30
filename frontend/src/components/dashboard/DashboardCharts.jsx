@@ -65,8 +65,10 @@ function ChartEmpty({ message = 'Collecting live telemetry…' }) {
   );
 }
 
-export function EventVolumeHourlyChart({ events = [] }) {
-  const data = hourlyVolumeFromEvents(events);
+export function EventVolumeHourlyChart({ events = [], hourlyTimeline = [] }) {
+  const data = hourlyTimeline.length > 0
+    ? hourlyTimeline
+    : hourlyVolumeFromEvents(events);
   const hasData = data.some((d) => d.count > 0);
 
   return (
@@ -77,10 +79,10 @@ export function EventVolumeHourlyChart({ events = [] }) {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-            <XAxis dataKey="hour" stroke="#6b7280" fontSize={10} interval="preserveStartEnd" />
+            <XAxis dataKey="hour" stroke="#6b7280" fontSize={10} interval={2} />
             <YAxis stroke="#6b7280" fontSize={12} allowDecimals={false} />
             <Tooltip contentStyle={tooltipStyle} />
-            <Line type="monotone" dataKey="count" stroke="#22d3ee" strokeWidth={2} dot={{ fill: '#22d3ee', r: 3 }} />
+            <Line type="monotone" dataKey="count" stroke="#22d3ee" strokeWidth={2} dot={{ fill: '#22d3ee', r: 2 }} activeDot={{ r: 4 }} />
           </LineChart>
         </ResponsiveContainer>
       )}
@@ -93,7 +95,17 @@ export function EventTimelineChart({ timeline = [] }) {
     date: d.date.slice(5),
     count: d.count,
   }));
+  const activeDays = data.filter((d) => d.count > 0).length;
   const hasData = data.some((d) => d.count > 0);
+  const isMisleading = hasData && activeDays <= 1;
+
+  if (isMisleading) {
+    return (
+      <ChartShell title="Event Volume (7 Days)">
+        <ChartEmpty message="Events concentrated in a single session — see hourly chart above for live distribution" />
+      </ChartShell>
+    );
+  }
 
   return (
     <ChartShell title="Event Volume (7 Days)">

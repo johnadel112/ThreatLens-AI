@@ -68,7 +68,7 @@ export default function Dashboard() {
       const [dashboardStats, healthRes, eventsRes, incidentsRes] = await Promise.all([
         getDashboardStats(),
         client.get('/health'),
-        getEvents({ limit: 50 }),
+        getEvents({ limit: 100 }),
         getIncidents({ limit: 5 }),
       ]);
 
@@ -173,7 +173,10 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <div className="xl:col-span-2 space-y-6">
-              <EventVolumeHourlyChart events={recentEvents} />
+              <EventVolumeHourlyChart
+                events={recentEvents}
+                hourlyTimeline={stats?.events?.hourlyTimeline}
+              />
               <EventTimelineChart timeline={stats?.events?.timeline} />
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <SeverityCharts alerts={stats?.alerts} incidents={stats?.incidents} />
