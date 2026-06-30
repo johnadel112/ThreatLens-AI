@@ -1,0 +1,15 @@
+{
+  "name": "threatlens-simulator",
+  "version": "0.1.0",
+  "description": "ThreatLens AI — Security event simulator",
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/run-normal.js",
+    "normal": "node scripts/run-normal.js",
+    "attack": "node scripts/run-attack.js",
+    "mixed": "node scripts/run-mixed.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7"
+  }
+}

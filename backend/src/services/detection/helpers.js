@@ -1,0 +1,95 @@
+import SecurityEvent from '../../models/SecurityEvent.js';
+import Alert from '../../models/Alert.js';
+
+export function windowStart(timestamp, windowMinutes) {
+  const ts = timestamp instanceof Date ? timestamp : new Date(timestamp);
+  return new Date(ts.getTime() - windowMinutes * 60 * 1000);
+}
+
+export async function queryRecentEvents({ eventType, username, ip, since, until, limit = 200 }) {
+  const filter = {
+    eventType,
+    timestamp: { $gte: since, $lte: until },
+  };
+
+  if (username && ip) {
+    filter.$or = [{ username }, { ip }];
+  } else if (username) {
+    filter.username = username;
+  } else if (ip) {
+    filter.ip = ip;
+  }
+
+  return SecurityEvent.find(filter).sort({ timestamp: 1 }).limit(limit);
+}
+
+export async function countRecentEvents({ eventType, username, ip, since, until }) {
+  const filter = {
+    eventType,
+    timestamp: { $gte: since, $lte: until },
+  };
+
+  if (username && ip) {
+    filter.$or = [{ username }, { ip }];
+  } else if (username) {
+    filter.username = username;
+  } else if (ip) {
+    filter.ip = ip;
+  }
+
+  return SecurityEvent.countDocuments(filter);
+}
+
+export async function hasOpenAlert({ ruleId, username, ip, sinceMinutes = 60 }) {
+  const since = new Date(Date.now() - sinceMinutes * 60 * 1000);
+  const filter = {
+    ruleId,
+    status: { $in: ['open', 'acknowledged'] },
+    createdAt: { $gte: since },
+  };
+
+  if (username && ip) {
+    filter.$or = [{ username }, { ip }];
+  } else if (username) {
+    filter.username = username;
+  } else if (ip) {
+    filter.ip = ip;
+  }
+
+  const existing = await Alert.findOne(filter);
+  return !!existing;
+}
+
+export async function findRecentAlert({ ruleId, username, ip, sinceMinutes }) {
+  const since = windowStart(new Date(), sinceMinutes);
+  const filter = {
+    ruleId,
+    createdAt: { $gte: since },
+  };
+
+  if (username) filter.username = username;
+  if (ip) filter.ip = ip;
+
+  return Alert.findOne(filter).sort({ createdAt: -1 });
+}
+
+export function buildAlertPayload({
+  title,
+  severity,
+  ruleId,
+  summary,
+  eventIds,
+  metrics,
+  username,
+  ip,
+}) {
+  return {
+    title,
+    severity,
+    ruleId,
+    evidence: { summary, eventIds, metrics },
+    relatedEvents: eventIds,
+    username,
+    ip,
+  };
+}
