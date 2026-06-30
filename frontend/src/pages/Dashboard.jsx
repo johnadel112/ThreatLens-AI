@@ -21,6 +21,7 @@ import LiveEventFeed, { EventTicker } from '../components/dashboard/LiveEventFee
 import RecentIncidentsPanel from '../components/dashboard/RecentIncidentsPanel';
 import PipelineVisualization from '../components/dashboard/PipelineVisualization';
 import {
+  EventVolumeHourlyChart,
   EventTimelineChart,
   EventTypeChart,
   SeverityCharts,
@@ -67,7 +68,7 @@ export default function Dashboard() {
       const [dashboardStats, healthRes, eventsRes, incidentsRes] = await Promise.all([
         getDashboardStats(),
         client.get('/health'),
-        getEvents({ limit: 8 }),
+        getEvents({ limit: 50 }),
         getIncidents({ limit: 5 }),
       ]);
 
@@ -172,6 +173,7 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <div className="xl:col-span-2 space-y-6">
+              <EventVolumeHourlyChart events={recentEvents} />
               <EventTimelineChart timeline={stats?.events?.timeline} />
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <SeverityCharts alerts={stats?.alerts} incidents={stats?.incidents} />
@@ -180,7 +182,7 @@ export default function Dashboard() {
 
             <div className="space-y-6">
               <ThreatLevelIndicator score={threatScore} />
-              <LazyThreatGlobe className="h-[280px]" />
+              <LazyThreatGlobe className="h-[280px]" recentEvent={recentEvents[0]} />
               <GlassCard>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-white flex items-center gap-2">

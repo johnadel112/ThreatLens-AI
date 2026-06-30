@@ -12,7 +12,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { severityChartData, statusChartData, typeChartData } from '../../utils/chartHelpers';
+import { severityChartData, statusChartData, typeChartData, hourlyVolumeFromEvents } from '../../utils/chartHelpers';
 
 const tooltipStyle = {
   backgroundColor: 'rgba(12, 20, 38, 0.95)',
@@ -52,23 +52,64 @@ export function KpiGrid({ stats }) {
   );
 }
 
+function ChartEmpty({ message = 'Collecting live telemetry…' }) {
+  return (
+    <div className="h-full flex flex-col items-center justify-center text-center px-4">
+      <div className="flex gap-1 mb-3">
+        {[0, 1, 2].map((i) => (
+          <span key={i} className="w-1.5 h-1.5 rounded-full bg-soc-accent/60 animate-pulse" style={{ animationDelay: `${i * 200}ms` }} />
+        ))}
+      </div>
+      <p className="text-sm text-gray-500">{message}</p>
+    </div>
+  );
+}
+
+export function EventVolumeHourlyChart({ events = [] }) {
+  const data = hourlyVolumeFromEvents(events);
+  const hasData = data.some((d) => d.count > 0);
+
+  return (
+    <ChartShell title="Event Volume (Last 24 Hours)">
+      {!hasData ? (
+        <ChartEmpty />
+      ) : (
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+            <XAxis dataKey="hour" stroke="#6b7280" fontSize={10} interval="preserveStartEnd" />
+            <YAxis stroke="#6b7280" fontSize={12} allowDecimals={false} />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Line type="monotone" dataKey="count" stroke="#22d3ee" strokeWidth={2} dot={{ fill: '#22d3ee', r: 3 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
+    </ChartShell>
+  );
+}
+
 export function EventTimelineChart({ timeline = [] }) {
   const data = timeline.map((d) => ({
     date: d.date.slice(5),
     count: d.count,
   }));
+  const hasData = data.some((d) => d.count > 0);
 
   return (
-    <ChartShell title="Event Volume (7 days)">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
-          <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
-          <YAxis stroke="#6b7280" fontSize={12} allowDecimals={false} />
-          <Tooltip contentStyle={tooltipStyle} />
-          <Line type="monotone" dataKey="count" stroke="#06b6d4" strokeWidth={2} dot={{ fill: '#06b6d4' }} />
-        </LineChart>
-      </ResponsiveContainer>
+    <ChartShell title="Event Volume (7 Days)">
+      {!hasData ? (
+        <ChartEmpty message="No events in the last 7 days yet" />
+      ) : (
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+            <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
+            <YAxis stroke="#6b7280" fontSize={12} allowDecimals={false} />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Line type="monotone" dataKey="count" stroke="#22d3ee" strokeWidth={2} dot={{ fill: '#22d3ee' }} />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
     </ChartShell>
   );
 }
@@ -76,39 +117,49 @@ export function EventTimelineChart({ timeline = [] }) {
 export function SeverityCharts({ alerts, incidents }) {
   const alertData = severityChartData(alerts?.bySeverity);
   const incidentData = severityChartData(incidents?.bySeverity);
+  const alertsEmpty = !alertData.some((d) => d.count > 0);
+  const incidentsEmpty = !incidentData.some((d) => d.count > 0);
 
   return (
     <>
       <ChartShell title="Alerts by Severity">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={alertData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
-            <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
-            <YAxis stroke="#6b7280" fontSize={12} allowDecimals={false} />
-            <Tooltip contentStyle={tooltipStyle} />
-            <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-              {alertData.map((entry) => (
-                <Cell key={entry.name} fill={entry.fill} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        {alertsEmpty ? (
+          <ChartEmpty message="No alerts recorded yet" />
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={alertData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+              <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
+              <YAxis stroke="#6b7280" fontSize={12} allowDecimals={false} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                {alertData.map((entry) => (
+                  <Cell key={entry.name} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </ChartShell>
 
       <ChartShell title="Incidents by Severity">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={incidentData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
-            <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
-            <YAxis stroke="#6b7280" fontSize={12} allowDecimals={false} />
-            <Tooltip contentStyle={tooltipStyle} />
-            <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-              {incidentData.map((entry) => (
-                <Cell key={entry.name} fill={entry.fill} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        {incidentsEmpty ? (
+          <ChartEmpty message="No incidents recorded yet" />
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={incidentData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+              <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
+              <YAxis stroke="#6b7280" fontSize={12} allowDecimals={false} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                {incidentData.map((entry) => (
+                  <Cell key={entry.name} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </ChartShell>
     </>
   );
