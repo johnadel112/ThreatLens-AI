@@ -55,3 +55,5 @@
 - [x] Mitigation Playbook panel on incident detail
 - [x] SOC dashboard with Recharts (KPIs, severity, status, timeline)
 - [x] Reports page with markdown viewer and export (MD download, print/PDF)
+- [x] Docker Compose stack (MongoDB, backend, AI service, frontend)
+- [x] GitHub Actions CI (tests, builds, Docker compose build)

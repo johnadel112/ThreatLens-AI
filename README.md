@@ -114,13 +114,32 @@ npm run normal    # baseline traffic
 npm run mixed     # normal + attack + normal
 ```
 
+## Docker (recommended for demos)
+
+```bash
+# From repository root
+docker compose up --build -d
+
+# Seed demo users
+docker compose exec backend node scripts/seed-users.js
+```
+
+| Service | URL |
+|---------|-----|
+| Dashboard | http://localhost:3000 |
+| Backend | http://localhost:4000/health |
+| AI Service | http://localhost:8000/health |
+
+See [docs/deployment.md](docs/deployment.md) for full Docker documentation.
+
 ## Health Checks
 
 | Service | Endpoint |
 |---------|----------|
 | Backend | `GET http://localhost:4000/health` |
 | AI Service | `GET http://localhost:8000/health` |
-| Frontend | `http://localhost:5173` |
+| Frontend (dev) | `http://localhost:5173` |
+| Frontend (Docker) | `http://localhost:3000` |
 
 ## Development Roadmap
 
