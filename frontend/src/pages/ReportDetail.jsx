@@ -1,8 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
+import toast from 'react-hot-toast';
 import { getReport } from '../api/reports';
 import SeverityBadge from '../components/ui/SeverityBadge';
+import StatusBadge from '../components/ui/StatusBadge';
+import { TableSkeleton } from '../components/ui/LoadingSkeleton';
+import EmptyState from '../components/ui/EmptyState';
+import SOCReportViewer from '../components/reports/SOCReportViewer';
+import { FileText } from 'lucide-react';
 import { downloadMarkdownReport, printReport } from '../utils/reportExport';
 
 export default function ReportDetail() {
@@ -18,6 +23,7 @@ export default function ReportDetail() {
         setReport(data);
       } catch (err) {
         setError(err.response?.data?.error || 'Failed to load report');
+        toast.error('Failed to load report');
       } finally {
         setLoading(false);
       }
@@ -26,77 +32,64 @@ export default function ReportDetail() {
     load();
   }, [id]);
 
-  if (loading) return <p className="text-gray-500">Loading report...</p>;
+  if (loading) return <TableSkeleton rows={6} />;
 
   if (error || !report) {
     return (
-      <div>
-        <p className="text-red-300">{error || 'Report not found'}</p>
-        <Link to="/reports" className="text-soc-accent text-sm mt-2 inline-block hover:underline">
-          ← Back to reports
-        </Link>
-      </div>
+      <EmptyState
+        icon={FileText}
+        title="Report not found"
+        description={error || 'This report may have been deleted or you do not have access.'}
+        action={
+          <Link to="/reports" className="btn-ghost text-sm">
+            ← Back to Reports
+          </Link>
+        }
+      />
     );
   }
 
   return (
-    <div>
+    <div className="max-w-5xl mx-auto">
       <Link to="/reports" className="text-sm text-soc-accent hover:underline mb-4 inline-block print:hidden">
-        ← Back to reports
+        ← Back to Reports
       </Link>
 
       <div className="mb-6 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 print:hidden">
-        <div>
+        <div className="min-w-0">
+          <p className="text-xs font-mono text-soc-accent uppercase tracking-widest mb-2">ThreatLens AI</p>
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            <h2 className="text-2xl font-bold text-white">{report.title}</h2>
+            <h1 className="text-2xl font-bold text-white leading-tight">{report.title}</h1>
             <SeverityBadge severity={report.severity} />
+            {report.status && <StatusBadge status={report.status} />}
           </div>
           <p className="text-sm text-gray-400">
             Generated {new Date(report.generatedAt).toLocaleString()} · Version {report.version}
           </p>
           {report.threatClassification?.attackType && (
             <p className="text-sm text-gray-500 mt-1">
-              {report.threatClassification.attackType} — {report.threatClassification.category}
+              {report.threatClassification.attackType}
+              {report.threatClassification.category ? ` — ${report.threatClassification.category}` : ''}
             </p>
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => downloadMarkdownReport(report)}
-            className="px-4 py-2 rounded-lg text-sm border border-soc-border text-gray-300 hover:text-white"
-          >
+        <div className="flex flex-wrap gap-2 shrink-0">
+          <button type="button" onClick={() => downloadMarkdownReport(report)} className="btn-ghost text-sm py-2">
             Download Markdown
           </button>
-          <button
-            type="button"
-            onClick={printReport}
-            className="px-4 py-2 rounded-lg text-sm bg-soc-accent/10 border border-soc-accent/30 text-soc-accent hover:bg-soc-accent/20"
-          >
+          <button type="button" onClick={printReport} className="btn-primary text-sm py-2">
             Print / Save PDF
           </button>
-          <Link
-            to={`/incidents/${report.incidentId}`}
-            className="px-4 py-2 rounded-lg text-sm border border-soc-border text-gray-300 hover:text-white"
-          >
+          <Link to={`/incidents/${report.incidentId}`} className="btn-ghost text-sm py-2">
             View Incident
           </Link>
         </div>
       </div>
 
-      <article
-        id="report-content"
-        className="bg-soc-surface border border-soc-border rounded-xl p-8 markdown-report"
-      >
-        <div className="hidden print:block mb-6 border-b border-gray-300 pb-4">
-          <h1>{report.title}</h1>
-          <p className="text-sm text-gray-600">
-            ThreatLens AI SOC Report · {new Date(report.generatedAt).toLocaleString()}
-          </p>
-        </div>
-        <ReactMarkdown>{report.markdown}</ReactMarkdown>
-      </article>
+      <div id="report-content" className="print:block">
+        <SOCReportViewer report={report} />
+      </div>
     </div>
   );
 }

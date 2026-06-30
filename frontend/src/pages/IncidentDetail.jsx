@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { getIncident, getAgentOutputs, updateIncident, investigateIncident, generateIncidentReport } from '../api/incidents';
 import { getPlaybookActions, approvePlaybookAction, rejectPlaybookAction, executePlaybookAction, getAuditLog } from '../api/playbooks';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +12,11 @@ import AISummaryPanel from '../components/incidents/AISummaryPanel';
 import PlaybookPanel from '../components/incidents/PlaybookPanel';
 import SeverityBadge from '../components/ui/SeverityBadge';
 import StatusBadge from '../components/ui/StatusBadge';
+import SOCReportViewer from '../components/reports/SOCReportViewer';
+import EmptyState from '../components/ui/EmptyState';
+import { TableSkeleton } from '../components/ui/LoadingSkeleton';
+import { FileText, Loader2 } from 'lucide-react';
+import { downloadMarkdownReport, printReport } from '../utils/reportExport';
 
 const INCIDENT_STATUSES = ['new', 'investigating', 'contained', 'resolved', 'closed'];
 const TABS = [
@@ -111,6 +117,7 @@ export default function IncidentDetail() {
     setInvestigating(true);
     setError('');
     setActionMsg('');
+    toast.loading('AI investigation started…', { id: 'investigate' });
 
     try {
       const data = await investigateIncident(id);
@@ -118,10 +125,13 @@ export default function IncidentDetail() {
       setActionMsg(
         `Multi-agent investigation complete — ${data.agentOutputs?.length || 6} agents (${data.aiSource === 'openai' ? 'LLM' : 'evidence-based'})`
       );
+      toast.success('AI investigation completed', { id: 'investigate' });
       await fetchPlaybooks();
       await fetchIncident();
     } catch (err) {
-      setError(err.response?.data?.error || 'AI investigation failed. Is the AI service running?');
+      const msg = err.response?.data?.error || 'AI investigation failed. Is the AI service running?';
+      setError(msg);
+      toast.error(msg, { id: 'investigate' });
       await fetchIncident();
     } finally {
       setInvestigating(false);
@@ -132,6 +142,7 @@ export default function IncidentDetail() {
     setGeneratingReport(true);
     setError('');
     setActionMsg('');
+    toast.loading('Generating SOC report…', { id: 'report' });
 
     try {
       const report = await generateIncidentReport(id);
@@ -141,11 +152,17 @@ export default function IncidentDetail() {
           markdown: report.markdown,
           generatedAt: report.generatedAt,
           version: report.version,
+          title: report.title,
+          severity: report.severity,
+          status: report.status,
         },
       }));
       setActionMsg(`SOC report generated (v${report.version})`);
+      toast.success('SOC report generated', { id: 'report' });
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to generate SOC report');
+      const msg = err.response?.data?.error || 'Failed to generate SOC report';
+      setError(msg);
+      toast.error(msg, { id: 'report' });
     } finally {
       setGeneratingReport(false);
     }
@@ -155,10 +172,13 @@ export default function IncidentDetail() {
     try {
       await approvePlaybookAction(actionId);
       setActionMsg('Playbook action approved');
+      toast.success('Playbook action approved');
       await fetchPlaybooks();
       await fetchIncident();
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to approve action');
+      const msg = err.response?.data?.error || 'Failed to approve action';
+      setError(msg);
+      toast.error(msg);
     }
   }
 
@@ -166,9 +186,12 @@ export default function IncidentDetail() {
     try {
       await rejectPlaybookAction(actionId, 'Declined by analyst');
       setActionMsg('Playbook action rejected');
+      toast.success('Playbook action rejected');
       await fetchPlaybooks();
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to reject action');
+      const msg = err.response?.data?.error || 'Failed to reject action';
+      setError(msg);
+      toast.error(msg);
     }
   }
 
@@ -176,15 +199,18 @@ export default function IncidentDetail() {
     try {
       const data = await executePlaybookAction(actionId);
       setActionMsg(data.message || 'Playbook executed (simulated)');
+      toast.success('Playbook action executed (simulated)');
       await fetchPlaybooks();
       await fetchIncident();
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to execute action');
+      const msg = err.response?.data?.error || 'Failed to execute action';
+      setError(msg);
+      toast.error(msg);
     }
   }
 
   if (loading) {
-    return <p className="text-gray-500">Loading incident...</p>;
+    return <TableSkeleton rows={6} />;
   }
 
   if (error && !incident) {
@@ -362,6 +388,17 @@ export default function IncidentDetail() {
             <h3 className="text-sm font-semibold text-white">Multi-Agent Investigation Pipeline</h3>
             <Link to={`/incidents/${id}/agents`} className="text-xs text-soc-accent hover:underline">Full view →</Link>
           </div>
+          {investigating || incident.investigationStatus === 'running' ? (
+            <div className="mb-4 px-3 py-2 rounded-lg bg-soc-accent/10 border border-soc-accent/20 text-xs text-soc-accent flex items-center gap-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              AI investigation in progress…
+            </div>
+          ) : incident.investigationStatus === 'failed' ? (
+            <EmptyState
+              title="Investigation failed"
+              description="The AI pipeline could not complete. Check that the AI service is running and try again."
+            />
+          ) : null}
           <AgentWorkflow outputs={incident.agentOutputs} showAllAgents />
         </GlassCard>
       )}
@@ -373,6 +410,7 @@ export default function IncidentDetail() {
           <PlaybookPanel
             actions={playbookActions}
             auditLogs={auditLogs}
+            incidentId={id}
             canEdit={canEdit}
             loading={playbooksLoading}
             onApprove={handleApprovePlaybook}
@@ -383,16 +421,63 @@ export default function IncidentDetail() {
       )}
 
       {activeTab === 'report' && (
-        <GlassCard>
-          <h3 className="text-sm font-semibold text-white mb-4">AI-Assisted SOC Investigation Report</h3>
-          {incident.report?.markdown ? (
-            <pre className="p-4 rounded-xl bg-black/30 border border-white/[0.06] text-xs text-gray-400 whitespace-pre-wrap overflow-x-auto max-h-[600px] font-mono leading-relaxed">
-              {incident.report.markdown}
-            </pre>
-          ) : (
-            <p className="text-sm text-gray-500">Complete AI investigation, then generate a SOC report.</p>
+        <div>
+          {generatingReport && (
+            <div className="mb-4 px-3 py-2 rounded-lg bg-soc-accent/10 border border-soc-accent/20 text-xs text-soc-accent flex items-center gap-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Generating SOC report…
+            </div>
           )}
-        </GlassCard>
+          {incident.report?.markdown ? (
+            <>
+              <div className="mb-4 flex flex-wrap gap-2 print:hidden">
+                <button
+                  type="button"
+                  onClick={() =>
+                    downloadMarkdownReport({
+                      title: incident.report.title || incident.title,
+                      markdown: incident.report.markdown,
+                      incidentId: id,
+                      severity: incident.severity,
+                      generatedAt: incident.report.generatedAt,
+                      version: incident.report.version,
+                    })
+                  }
+                  className="btn-ghost text-sm py-2"
+                >
+                  Download Markdown
+                </button>
+                <button type="button" onClick={printReport} className="btn-primary text-sm py-2">
+                  Print / Save PDF
+                </button>
+              </div>
+              <div id="report-content">
+                <SOCReportViewer
+                  report={{
+                    title: incident.report.title || `SOC Report — ${incident.title}`,
+                    markdown: incident.report.markdown,
+                    incidentId: id,
+                    severity: incident.severity,
+                    status: incident.report.status || incident.status,
+                    generatedAt: incident.report.generatedAt,
+                    version: incident.report.version,
+                    threatClassification: incident.threatClassification,
+                  }}
+                />
+              </div>
+            </>
+          ) : (
+            <EmptyState
+              icon={FileText}
+              title="Report not generated yet"
+              description={
+                incident.investigationStatus === 'completed'
+                  ? 'Complete the investigation summary above, then generate a SOC report.'
+                  : 'Complete AI investigation first, then generate a professional SOC report.'
+              }
+            />
+          )}
+        </div>
       )}
 
     </div>
