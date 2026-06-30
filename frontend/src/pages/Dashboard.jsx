@@ -55,8 +55,8 @@ export default function Dashboard() {
         setBackend(healthRes.data);
 
         try {
-          const res = await fetch('http://localhost:8000/health');
-          setAi(await res.json());
+          const { data } = await client.get('/health/ai');
+          setAi(data);
         } catch {
           setAi({ status: 'unreachable' });
         }

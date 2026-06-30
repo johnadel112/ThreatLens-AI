@@ -132,6 +132,22 @@ docker compose exec backend node scripts/seed-users.js
 
 See [docs/deployment.md](docs/deployment.md) for full Docker documentation.
 
+## Cloud Deployment (Render + MongoDB Atlas)
+
+```bash
+# 1. Create MongoDB Atlas cluster and copy MONGODB_URI
+# 2. Render Dashboard → New → Blueprint → connect this repo
+# 3. Set MONGODB_URI and optional OPENAI_API_KEY
+# 4. Seed users via Render backend shell: node scripts/seed-users.js
+```
+
+| Service | URL (after deploy) |
+|---------|-------------------|
+| Dashboard | `https://threatlens-frontend.onrender.com` |
+| Backend | `https://threatlens-backend.onrender.com` |
+
+Full guide: [docs/cloud-deployment.md](docs/cloud-deployment.md)
+
 ## Health Checks
 
 | Service | Endpoint |

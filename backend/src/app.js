@@ -15,7 +15,7 @@ import reportsRoutes from './routes/reports.routes.js';
 const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: config.corsOrigin }));
+app.use(cors({ origin: config.corsOrigins, credentials: true }));
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/health', (_req, res) => {
@@ -36,6 +36,21 @@ app.get('/api/health', (_req, res) => {
     timestamp: new Date().toISOString(),
     database: getDBStatus(),
   });
+});
+
+app.get('/api/health/ai', async (_req, res) => {
+  try {
+    const response = await fetch(`${config.aiServiceUrl}/health`, {
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!response.ok) {
+      return res.status(503).json({ status: 'error', service: 'threatlens-ai-service' });
+    }
+    const data = await response.json();
+    res.json(data);
+  } catch {
+    res.status(503).json({ status: 'unreachable', service: 'threatlens-ai-service' });
+  }
 });
 
 app.use('/api/auth', authRoutes);

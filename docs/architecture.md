@@ -57,3 +57,4 @@
 - [x] Reports page with markdown viewer and export (MD download, print/PDF)
 - [x] Docker Compose stack (MongoDB, backend, AI service, frontend)
 - [x] GitHub Actions CI (tests, builds, Docker compose build)
+- [x] Render blueprint (`render.yaml`) + MongoDB Atlas cloud deployment guide

@@ -1,3 +1,5 @@
+import os
+
 from datetime import datetime, timezone
 
 from fastapi import FastAPI
@@ -5,6 +7,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.routes.investigate import router as investigate_router
+
+def _cors_origins() -> list[str]:
+    raw = os.getenv("CORS_ORIGINS", "http://localhost:4000,http://localhost:5173,http://localhost:3000")
+    return [o.strip() for o in raw.split(",") if o.strip()]
 
 app = FastAPI(
     title="ThreatLens AI Service",
@@ -14,7 +20,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4000", "http://localhost:5173"],
+    allow_origins=_cors_origins(),
     allow_methods=["*"],
     allow_headers=["*"],
 )

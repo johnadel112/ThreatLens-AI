@@ -20,7 +20,7 @@ docker compose up --build -d
 | **Dashboard** | http://localhost:3000 |
 | Backend API | http://localhost:4000/health |
 | AI Service | http://localhost:8000/health |
-| MongoDB | localhost:27017 |
+| MongoDB | internal only (Docker network) |
 
 The frontend container proxies `/api` to the backend — no CORS issues when using port 3000.
 

@@ -1,0 +1,61 @@
+# ThreatLens AI — Render Blueprint
+# Deploy: Render Dashboard → New → Blueprint → connect GitHub repo
+# Docs: docs/cloud-deployment.md
+
+services:
+  - type: web
+    name: threatlens-ai
+    runtime: docker
+    dockerfilePath: ./ai-service/Dockerfile
+    dockerContext: ./ai-service
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: MODEL_NAME
+        value: gpt-4o-mini
+      - key: CORS_ORIGINS
+        sync: false
+
+  - type: web
+    name: threatlens-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 8h
+      - key: NODE_ENV
+        value: production
+      - key: AI_SERVICE_URL
+        fromService:
+          type: web
+          name: threatlens-ai
+          property: host
+      - key: CORS_ORIGINS
+        fromService:
+          type: web
+          name: threatlens-frontend
+          property: host
+      - key: SIMULATOR_API_KEY
+        generateValue: true
+
+  - type: web
+    name: threatlens-frontend
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    plan: free
+    envVars:
+      - key: BACKEND_HOST
+        fromService:
+          type: web
+          name: threatlens-backend
+          property: host

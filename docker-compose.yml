@@ -3,10 +3,10 @@ services:
     image: mongo:7
     container_name: threatlens-mongo
     restart: unless-stopped
-    ports:
-      - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    # No host port — avoids conflict with other local MongoDB instances.
+    # Backend connects via Docker network: mongodb://mongo:27017/threatlens
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s

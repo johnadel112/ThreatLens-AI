@@ -1,9 +1,8 @@
 import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+import { getApiUrl } from '../config.js';
 
 const client = axios.create({
-  baseURL: API_URL,
+  baseURL: getApiUrl(),
   headers: { 'Content-Type': 'application/json' },
 });
 
