@@ -13,6 +13,8 @@ import PlaybookPanel from '../components/incidents/PlaybookPanel';
 import SeverityBadge from '../components/ui/SeverityBadge';
 import StatusBadge from '../components/ui/StatusBadge';
 import SOCReportViewer from '../components/reports/SOCReportViewer';
+import ExplainableEvidencePanel from '../components/agents/ExplainableEvidencePanel';
+import ReportQualityPanel from '../components/reports/ReportQualityPanel';
 import CorrelationPanel from '../components/incidents/CorrelationPanel';
 import ThreatIntelCard from '../components/ui/ThreatIntelCard';
 import RiskScoreBadge from '../components/ui/RiskScoreBadge';
@@ -333,6 +335,18 @@ export default function IncidentDetail() {
             <h3 className="text-sm font-semibold text-white mb-4">AI Investigation Summary</h3>
             <AISummaryPanel incident={incident} />
           </GlassCard>
+          {incident.aiExplainability && (
+            <GlassCard>
+              <h3 className="text-sm font-semibold text-white mb-4">Explainable AI Evidence</h3>
+              <ExplainableEvidencePanel explainability={incident.aiExplainability} />
+            </GlassCard>
+          )}
+          {incident.reportQuality && (
+            <GlassCard>
+              <h3 className="text-sm font-semibold text-white mb-4">Report Quality Assessment</h3>
+              <ReportQualityPanel quality={incident.reportQuality} />
+            </GlassCard>
+          )}
           {incident.threatIntel?.ip && (
             <ThreatIntelCard intel={incident.threatIntel} />
           )}

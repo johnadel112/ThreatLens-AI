@@ -3,6 +3,8 @@ import SeverityBadge from '../ui/SeverityBadge';
 import RiskScoreBadge from '../ui/RiskScoreBadge';
 import MitreTechniqueBadge from '../ui/MitreTechniqueBadge';
 import ThreatIntelCard from '../ui/ThreatIntelCard';
+import ReportQualityPanel from './ReportQualityPanel';
+import ExplainableEvidencePanel from '../agents/ExplainableEvidencePanel';
 import { parseSocReportMarkdown } from '../../utils/parseSocReport';
 
 function Section({ title, children, className = '' }) {
@@ -135,7 +137,35 @@ export default function SOCReportViewer({ report }) {
         </GlassCard>
       )}
 
-      {report.threatIntel?.ip && <ThreatIntelCard intel={report.threatIntel} />}
+      {sections['AI Explainable Analysis'] && (
+        <GlassCard>
+          <h3 className="text-sm font-semibold text-white uppercase tracking-wide mb-4">Explainable AI Analysis</h3>
+          <BulletList text={sections['AI Explainable Analysis']} />
+        </GlassCard>
+      )}
+
+      {(report.reportQuality || report.aiExplainability) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {report.aiExplainability && (
+            <GlassCard>
+              <h3 className="text-sm font-semibold text-white mb-4">AI Evidence References</h3>
+              <ExplainableEvidencePanel explainability={report.aiExplainability} />
+            </GlassCard>
+          )}
+          {report.reportQuality && (
+            <GlassCard>
+              <h3 className="text-sm font-semibold text-white mb-4">Report Quality</h3>
+              <ReportQualityPanel quality={report.reportQuality} />
+            </GlassCard>
+          )}
+        </div>
+      )}
+
+      {sections['Report Quality Assessment'] && !report.reportQuality && (
+        <Section title="Report Quality Assessment">
+          <BulletList text={sections['Report Quality Assessment']} />
+        </Section>
+      )}
 
       {sections['AI Triage Summary'] && <Section title="AI Triage Summary">{sections['AI Triage Summary']}</Section>}
       {sections['Investigation Summary'] && <Section title="Investigation Summary">{sections['Investigation Summary']}</Section>}
@@ -180,6 +210,8 @@ export default function SOCReportViewer({ report }) {
       )}
 
       {sections['Reviewer Notes'] && <Section title="Reviewer Notes">{sections['Reviewer Notes']}</Section>}
+
+      {report.threatIntel?.ip && <ThreatIntelCard intel={report.threatIntel} />}
 
       {sections['Final Conclusion'] && (
         <GlassCard className="border-emerald-500/20 bg-emerald-500/5">

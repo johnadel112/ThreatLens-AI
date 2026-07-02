@@ -5,6 +5,8 @@ import {
   ChevronRight, Loader2, AlertTriangle, Clock,
 } from 'lucide-react';
 import { AGENT_DESCRIPTIONS, AGENT_LABELS, WORKFLOW_AGENTS } from '../../utils/agents';
+import ExplainableEvidencePanel from './ExplainableEvidencePanel';
+import ReportQualityPanel from '../reports/ReportQualityPanel';
 
 const AGENT_ICONS = {
   triage: Search,
@@ -96,9 +98,17 @@ function AgentStepCard({ agent, index, expanded, onToggle, isLast }) {
           )}
         </button>
         {expanded && agent.output && (
-          <pre className="mt-3 p-3 rounded-lg bg-black/30 border border-white/[0.06] text-xs text-gray-400 overflow-x-auto max-h-52 font-mono leading-relaxed">
-            {typeof agent.output === 'string' ? agent.output : JSON.stringify(agent.output, null, 2)}
-          </pre>
+          <div className="mt-3 space-y-3">
+            {(agent.agentName === 'investigation' || agent.agentName === 'classification') && (
+              <ExplainableEvidencePanel agentOutput={agent.output} />
+            )}
+            {agent.agentName === 'reviewer' && agent.output?.reportQuality && (
+              <ReportQualityPanel quality={agent.output.reportQuality} />
+            )}
+            <pre className="p-3 rounded-lg bg-black/30 border border-white/[0.06] text-xs text-gray-400 overflow-x-auto max-h-52 font-mono leading-relaxed">
+              {typeof agent.output === 'string' ? agent.output : JSON.stringify(agent.output, null, 2)}
+            </pre>
+          </div>
         )}
       </motion.div>
     </div>
