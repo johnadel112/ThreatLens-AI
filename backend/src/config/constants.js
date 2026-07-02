@@ -59,9 +59,41 @@ export const PLAYBOOK_STATUSES = ['pending', 'approved', 'rejected', 'executed',
 
 export const PLAYBOOK_PRIORITIES = ['low', 'medium', 'high'];
 
+export const CASE_PRIORITIES = ['P1', 'P2', 'P3', 'P4'];
+
+export const CASE_TASK_STATUSES = ['open', 'in_progress', 'done', 'cancelled'];
+
+export const NOTIFICATION_TYPES = [
+  'incident_created',
+  'incident_assigned',
+  'playbook_pending',
+  'playbook_executed',
+  'rule_updated',
+  'case_note_added',
+];
+
+export const ENTITY_TYPES = [
+  'playbook_action',
+  'incident',
+  'detection_rule',
+  'playbook_template',
+  'notification',
+];
+
 export const AUDIT_ACTIONS = [
   'playbook_created',
   'playbook_approved',
   'playbook_rejected',
   'playbook_executed',
+  'playbook_template_run',
+  'incident_created',
+  'incident_status_changed',
+  'incident_assigned',
+  'incident_priority_changed',
+  'case_note_added',
+  'case_task_added',
+  'case_task_updated',
+  'rule_enabled',
+  'rule_disabled',
+  'rule_updated',
 ];

@@ -1,22 +1,5 @@
-import { bruteForceRule } from './rules/bruteForce.rule.js';
-import { suspiciousLoginRule } from './rules/suspiciousLogin.rule.js';
-import { dataExfiltrationRule } from './rules/dataExfiltration.rule.js';
-import { suspiciousAdminRule } from './rules/suspiciousAdmin.rule.js';
-import { portScanRule } from './rules/portScan.rule.js';
-import { privilegeEscalationRule } from './rules/privilegeEscalation.rule.js';
-import { malwareActivityRule } from './rules/malwareActivity.rule.js';
-import { apiAbuseRule } from './rules/apiAbuse.rule.js';
-
-export const ALL_RULES = [
-  bruteForceRule,
-  suspiciousLoginRule,
-  dataExfiltrationRule,
-  suspiciousAdminRule,
-  portScanRule,
-  privilegeEscalationRule,
-  malwareActivityRule,
-  apiAbuseRule,
-];
+import { ALL_RULES } from './allRules.js';
+import { applyRuleOverrides, getRuleOverrides } from './ruleManager.service.js';
 
 const rulesByEventType = ALL_RULES.reduce((map, rule) => {
   for (const eventType of rule.eventTypes) {
@@ -26,8 +9,13 @@ const rulesByEventType = ALL_RULES.reduce((map, rule) => {
   return map;
 }, new Map());
 
-export function getRulesForEventType(eventType) {
-  return rulesByEventType.get(eventType) || [];
+export async function getRulesForEventType(eventType) {
+  const overrides = await getRuleOverrides();
+  const rules = rulesByEventType.get(eventType) || [];
+
+  return rules
+    .map((rule) => applyRuleOverrides(rule, overrides[rule.id]))
+    .filter(Boolean);
 }
 
 export function getRuleById(ruleId) {

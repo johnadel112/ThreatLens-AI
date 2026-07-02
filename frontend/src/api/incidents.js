@@ -34,3 +34,18 @@ export async function getIncidentStats() {
   const { data } = await client.get('/incidents/stats');
   return data;
 }
+
+export async function addIncidentNote(id, body) {
+  const { data } = await client.post(`/incidents/${id}/notes`, { body });
+  return data;
+}
+
+export async function addIncidentTask(id, payload) {
+  const { data } = await client.post(`/incidents/${id}/tasks`, payload);
+  return data;
+}
+
+export async function updateIncidentTask(id, taskId, payload) {
+  const { data } = await client.patch(`/incidents/${id}/tasks/${taskId}`, payload);
+  return data;
+}

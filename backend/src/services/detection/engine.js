@@ -7,7 +7,7 @@ import { enrichIp } from '../intelligence/threatIntel.service.js';
 import { computeAlertRiskScore } from '../intelligence/riskScoring.service.js';
 
 export async function runDetection(event) {
-  const rules = getRulesForEventType(event.eventType);
+  const rules = await getRulesForEventType(event.eventType);
   if (rules.length === 0) return [];
 
   const alertsCreated = [];

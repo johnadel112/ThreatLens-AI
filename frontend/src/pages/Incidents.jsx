@@ -78,8 +78,8 @@ export default function Incidents() {
   return (
     <div>
       <PageHeader
-        title="Security Incidents"
-        subtitle="Related alerts grouped into investigation cases"
+        title="Investigation Cases"
+        subtitle="Correlated alerts grouped into analyst investigation cases"
         actions={
           <button type="button" onClick={fetchIncidents} className="btn-ghost text-sm py-2">
             Refresh
@@ -143,6 +143,9 @@ export default function Incidents() {
             >
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <h3 className="font-semibold text-white leading-snug">{incident.title}</h3>
+                {incident.caseNumber && (
+                  <code className="text-[10px] text-soc-accent font-mono">{incident.caseNumber}</code>
+                )}
                 <SeverityBadge severity={incident.severity} />
                 <IncidentStatusBadge status={incident.status} />
                 {incident.riskScore != null && <RiskScoreBadge score={incident.riskScore} showLabel={false} />}
@@ -151,6 +154,7 @@ export default function Incidents() {
                 )}
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mb-3">
+                {incident.priority && <span>Priority: <span className="text-gray-300">{incident.priority}</span></span>}
                 {incident.username && <span>User: {incident.username}</span>}
                 {incident.ip && <span>IP: <code className="text-gray-400">{incident.ip}</code></span>}
                 <span>{incident.alertCount || incident.alerts?.length || 0} alerts</span>

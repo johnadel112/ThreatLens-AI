@@ -24,3 +24,23 @@ export async function getAuditLog(incidentId) {
   const { data } = await client.get('/playbooks/audit', { params: { incidentId } });
   return data;
 }
+
+export async function getPlaybookTemplates() {
+  const { data } = await client.get('/playbooks/templates');
+  return data;
+}
+
+export async function runPlaybookTemplate(incidentId, templateId) {
+  const { data } = await client.post('/playbooks/run-template', { incidentId, templateId });
+  return data;
+}
+
+export async function createManualPlaybookAction(incidentId, payload) {
+  const { data } = await client.post('/playbooks/manual', { incidentId, ...payload });
+  return data;
+}
+
+export async function getPlaybookQueue(status = 'pending') {
+  const { data } = await client.get('/playbooks', { params: { status } });
+  return data;
+}

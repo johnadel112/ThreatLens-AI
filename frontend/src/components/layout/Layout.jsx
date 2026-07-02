@@ -2,16 +2,21 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Radio, Bell, FolderKanban, FileText, Shield, LogOut,
+  ScrollText, ShieldAlert, Workflow,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import RoleBadge from '../ui/RoleBadge';
 import LivePulseIndicator from '../ui/LivePulseIndicator';
+import NotificationBell from './NotificationBell';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/events', label: 'Events', icon: Radio },
   { to: '/alerts', label: 'Alerts', icon: Bell },
-  { to: '/incidents', label: 'Incidents', icon: FolderKanban },
+  { to: '/incidents', label: 'Cases', icon: FolderKanban },
+  { to: '/playbooks', label: 'SOAR Queue', icon: Workflow },
+  { to: '/rules', label: 'Detection Rules', icon: ShieldAlert },
+  { to: '/audit', label: 'Audit Logs', icon: ScrollText },
   { to: '/reports', label: 'Reports', icon: FileText },
 ];
 
@@ -88,6 +93,7 @@ export default function Layout() {
           <span className="text-sm text-gray-400 hidden sm:block">Live AI Security Operations</span>
           <div className="ml-auto flex items-center gap-4">
             <LivePulseIndicator active={liveMonitoring} />
+            <NotificationBell />
             <RoleBadge role={user?.role} />
           </div>
         </header>

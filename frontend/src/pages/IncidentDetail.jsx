@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { getIncident, getAgentOutputs, updateIncident, investigateIncident, generateIncidentReport } from '../api/incidents';
-import { getPlaybookActions, approvePlaybookAction, rejectPlaybookAction, executePlaybookAction, getAuditLog } from '../api/playbooks';
+import { getPlaybookActions, approvePlaybookAction, rejectPlaybookAction, executePlaybookAction, getAuditLog, getPlaybookTemplates, runPlaybookTemplate } from '../api/playbooks';
 import { useAuth } from '../context/AuthContext';
 import { usePolling } from '../hooks/usePolling';
 import Timeline from '../components/incidents/Timeline';
@@ -14,11 +14,13 @@ import SeverityBadge from '../components/ui/SeverityBadge';
 import StatusBadge from '../components/ui/StatusBadge';
 import SOCReportViewer from '../components/reports/SOCReportViewer';
 import ExplainableEvidencePanel from '../components/agents/ExplainableEvidencePanel';
-import ReportQualityPanel from '../components/reports/ReportQualityPanel';
+import ReportQualityPanel, { hasReportQualityData } from '../components/reports/ReportQualityPanel';
 import CorrelationPanel from '../components/incidents/CorrelationPanel';
 import ThreatIntelCard from '../components/ui/ThreatIntelCard';
 import RiskScoreBadge from '../components/ui/RiskScoreBadge';
 import MitreTechniqueBadge from '../components/ui/MitreTechniqueBadge';
+import CaseNotesPanel from '../components/incidents/CaseNotesPanel';
+import CaseTasksPanel from '../components/incidents/CaseTasksPanel';
 import EmptyState from '../components/ui/EmptyState';
 import { TableSkeleton } from '../components/ui/LoadingSkeleton';
 import { FileText, Loader2 } from 'lucide-react';
@@ -30,6 +32,7 @@ const TABS = [
   { id: 'correlation', label: 'Correlation' },
   { id: 'timeline', label: 'Timeline' },
   { id: 'evidence', label: 'Evidence' },
+  { id: 'case', label: 'Case Management' },
   { id: 'ai', label: 'AI Investigation' },
   { id: 'playbook', label: 'Playbook' },
   { id: 'report', label: 'SOC Report' },
@@ -37,6 +40,7 @@ const TABS = [
 
 export default function IncidentDetail() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const { user, hasRole } = useAuth();
   const canEdit = hasRole('admin', 'analyst');
 
@@ -48,8 +52,9 @@ export default function IncidentDetail() {
   const [actionMsg, setActionMsg] = useState('');
   const [playbookActions, setPlaybookActions] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [playbookTemplates, setPlaybookTemplates] = useState([]);
   const [playbooksLoading, setPlaybooksLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview');
 
   const fetchIncident = useCallback(async () => {
     setLoading(true);
@@ -71,12 +76,14 @@ export default function IncidentDetail() {
 
   const fetchPlaybooks = useCallback(async () => {
     try {
-      const [playbookData, auditData] = await Promise.all([
+      const [playbookData, auditData, templateData] = await Promise.all([
         getPlaybookActions(id),
         getAuditLog(id),
+        getPlaybookTemplates(),
       ]);
       setPlaybookActions(playbookData.actions || []);
       setAuditLogs(auditData.logs || []);
+      setPlaybookTemplates(templateData.templates || []);
     } catch {
       // ignore — playbooks optional until investigation
     } finally {
@@ -130,13 +137,15 @@ export default function IncidentDetail() {
       const data = await investigateIncident(id);
       setIncident(data.incident);
       setActionMsg(
-        `Multi-agent investigation complete — ${data.agentOutputs?.length || 6} agents (${data.aiSource === 'openai' ? 'LLM' : 'evidence-based'})`
+        data.usedFallback
+          ? 'Investigation complete using evidence-based analysis (AI service offline)'
+          : `Multi-agent investigation complete — ${data.agentOutputs?.length || 6} agents (${data.aiSource === 'openai' ? 'LLM' : 'evidence-based'})`
       );
       toast.success('AI investigation completed', { id: 'investigate' });
       await fetchPlaybooks();
       await fetchIncident();
     } catch (err) {
-      const msg = err.response?.data?.error || 'AI investigation failed. Is the AI service running?';
+      const msg = err.response?.data?.error || 'Investigation failed. Please try again.';
       setError(msg);
       toast.error(msg, { id: 'investigate' });
       await fetchIncident();
@@ -202,6 +211,16 @@ export default function IncidentDetail() {
     }
   }
 
+  async function handleRunTemplate(templateId) {
+    try {
+      const data = await runPlaybookTemplate(id, templateId);
+      toast.success(data.message || 'Playbook started');
+      await fetchPlaybooks();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to run playbook');
+    }
+  }
+
   async function handleExecutePlaybook(actionId) {
     try {
       const data = await executePlaybookAction(actionId);
@@ -241,6 +260,11 @@ export default function IncidentDetail() {
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-2">
             <h2 className="text-2xl font-bold text-white">{incident.title}</h2>
+            {incident.caseNumber && (
+              <code className="text-xs text-soc-accent font-mono px-2 py-0.5 rounded border border-soc-accent/20 bg-soc-accent/5">
+                {incident.caseNumber}
+              </code>
+            )}
             <SeverityBadge severity={incident.severity} />
             {incident.riskScore != null && <RiskScoreBadge score={incident.riskScore} />}
             {incident.mitre?.primaryTactic && (
@@ -251,6 +275,10 @@ export default function IncidentDetail() {
             </span>
           </div>
           <div className="flex flex-wrap gap-4 text-sm text-gray-400">
+            {incident.priority && <span>Priority: <span className="text-white">{incident.priority}</span></span>}
+            {incident.slaDueAt && (
+              <span>SLA: <span className="text-amber-300">{new Date(incident.slaDueAt).toLocaleString()}</span></span>
+            )}
             {incident.username && <span>User: {incident.username}</span>}
             {incident.ip && <span>IP: <code>{incident.ip}</code></span>}
             {incident.assignedAnalyst && (
@@ -333,15 +361,13 @@ export default function IncidentDetail() {
         <div className="xl:col-span-2 space-y-6">
           <GlassCard>
             <h3 className="text-sm font-semibold text-white mb-4">AI Investigation Summary</h3>
-            <AISummaryPanel incident={incident} />
+            <AISummaryPanel incident={incident} onRetry={canEdit ? handleInvestigate : undefined} />
           </GlassCard>
-          {incident.aiExplainability && (
-            <GlassCard>
-              <h3 className="text-sm font-semibold text-white mb-4">Explainable AI Evidence</h3>
-              <ExplainableEvidencePanel explainability={incident.aiExplainability} />
-            </GlassCard>
-          )}
-          {incident.reportQuality && (
+          <GlassCard>
+            <h3 className="text-sm font-semibold text-white mb-4">Explainable AI Evidence</h3>
+            <ExplainableEvidencePanel explainability={incident.aiExplainability} />
+          </GlassCard>
+          {hasReportQualityData(incident.reportQuality) && (
             <GlassCard>
               <h3 className="text-sm font-semibold text-white mb-4">Report Quality Assessment</h3>
               <ReportQualityPanel quality={incident.reportQuality} />
@@ -430,6 +456,27 @@ export default function IncidentDetail() {
         </GlassCard>
       )}
 
+      {activeTab === 'case' && (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <GlassCard>
+            <h3 className="text-sm font-semibold text-white mb-4">Analyst Notes</h3>
+            <CaseNotesPanel
+              incident={incident}
+              canEdit={canEdit}
+              onUpdated={(updated) => setIncident((prev) => ({ ...prev, ...updated, alerts: prev.alerts, events: prev.events, agentOutputs: prev.agentOutputs }))}
+            />
+          </GlassCard>
+          <GlassCard>
+            <h3 className="text-sm font-semibold text-white mb-4">Case Tasks</h3>
+            <CaseTasksPanel
+              incident={incident}
+              canEdit={canEdit}
+              onUpdated={(updated) => setIncident((prev) => ({ ...prev, ...updated, alerts: prev.alerts, events: prev.events, agentOutputs: prev.agentOutputs }))}
+            />
+          </GlassCard>
+        </div>
+      )}
+
       {activeTab === 'ai' && (
         <GlassCard>
           <div className="flex items-center justify-between mb-4">
@@ -452,20 +499,40 @@ export default function IncidentDetail() {
       )}
 
       {activeTab === 'playbook' && (
-        <GlassCard>
-          <h3 className="text-sm font-semibold text-white mb-2">Mitigation Playbook</h3>
-          <p className="text-xs text-gray-500 mb-4">AI-recommended actions require analyst approval before simulated execution.</p>
-          <PlaybookPanel
-            actions={playbookActions}
-            auditLogs={auditLogs}
-            incidentId={id}
-            canEdit={canEdit}
-            loading={playbooksLoading}
-            onApprove={handleApprovePlaybook}
-            onReject={handleRejectPlaybook}
-            onExecute={handleExecutePlaybook}
-          />
-        </GlassCard>
+        <div className="space-y-6">
+          {canEdit && playbookTemplates.length > 0 && (
+            <GlassCard>
+              <h3 className="text-sm font-semibold text-white mb-2">Response Playbook Templates</h3>
+              <p className="text-xs text-gray-500 mb-4">Run a multi-step SOAR playbook — each step requires analyst approval.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {playbookTemplates.map((template) => (
+                  <div key={template.id} className="p-4 rounded-xl border border-white/[0.06] bg-black/20">
+                    <p className="text-sm font-medium text-white">{template.name}</p>
+                    <p className="text-xs text-gray-500 mt-1 mb-3">{template.description}</p>
+                    <p className="text-[10px] text-gray-600 mb-3">{template.stepCount} steps</p>
+                    <button type="button" onClick={() => handleRunTemplate(template.id)} className="btn-primary text-xs py-1.5">
+                      Run Playbook
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </GlassCard>
+          )}
+          <GlassCard>
+            <h3 className="text-sm font-semibold text-white mb-2">Mitigation Playbook</h3>
+            <p className="text-xs text-gray-500 mb-4">AI-recommended and template actions require analyst approval before simulated execution.</p>
+            <PlaybookPanel
+              actions={playbookActions}
+              auditLogs={auditLogs}
+              incidentId={id}
+              canEdit={canEdit}
+              loading={playbooksLoading}
+              onApprove={handleApprovePlaybook}
+              onReject={handleRejectPlaybook}
+              onExecute={handleExecutePlaybook}
+            />
+          </GlassCard>
+        </div>
       )}
 
       {activeTab === 'report' && (

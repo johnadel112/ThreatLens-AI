@@ -97,6 +97,11 @@ export default function PlaybookPanel({
             >
               {action.priority} priority
             </span>
+            {action.templateName && (
+              <span className="text-[10px] text-purple-300 border border-purple-500/20 px-1.5 py-0.5 rounded">
+                {action.templateName}{action.stepOrder ? ` · Step ${action.stepOrder}` : ''}
+              </span>
+            )}
           </div>
 
           <p className="text-sm text-gray-300 leading-relaxed">{action.description}</p>

@@ -12,6 +12,14 @@ import {
 } from '../services/ai/investigateService.js';
 import { buildReportForIncident } from '../services/reports/reportBuilder.js';
 import { ownerFilter, assertDocumentOwner } from '../utils/ownerScope.js';
+import { recordAudit } from '../services/playbook/auditService.js';
+import { notifyUser } from '../services/notifications/notificationService.js';
+import {
+  addCaseNote,
+  addCaseTask,
+  updateCaseTask,
+  validatePriority,
+} from '../services/incident/caseService.js';
 
 function buildIncidentFilter(query) {
   const filter = {};
@@ -29,7 +37,12 @@ function buildIncidentFilter(query) {
 
   if (query.search) {
     const pattern = new RegExp(query.search, 'i');
-    filter.$or = [{ title: pattern }, { username: pattern }, { ip: pattern }];
+    filter.$or = [
+      { title: pattern },
+      { username: pattern },
+      { ip: pattern },
+      { caseNumber: pattern },
+    ];
   }
 
   return filter;
@@ -104,7 +117,10 @@ export async function updateIncident(req, res, next) {
     const incident = await Incident.findById(req.params.id);
     assertDocumentOwner(incident, req.user._id);
 
-    const { status, assignedAnalystId } = req.body;
+    const { status, assignedAnalystId, priority, tags } = req.body;
+    const previousStatus = incident.status;
+    const previousPriority = incident.priority;
+    const previousAssignee = incident.assignedAnalyst?.toString();
 
     if (status) {
       if (!INCIDENT_STATUSES.includes(status)) {
@@ -116,6 +132,15 @@ export async function updateIncident(req, res, next) {
       incident.status = status;
     }
 
+    if (priority) {
+      validatePriority(priority);
+      incident.priority = priority;
+    }
+
+    if (tags !== undefined) {
+      incident.tags = Array.isArray(tags) ? tags.filter(Boolean) : [];
+    }
+
     if (assignedAnalystId !== undefined) {
       if (assignedAnalystId === null || assignedAnalystId === '') {
         incident.assignedAnalyst = undefined;
@@ -125,10 +150,51 @@ export async function updateIncident(req, res, next) {
           return res.status(404).json({ error: 'Analyst not found', code: 'NOT_FOUND' });
         }
         incident.assignedAnalyst = analyst._id;
+
+        if (analyst._id.toString() !== previousAssignee) {
+          await notifyUser(analyst._id, {
+            type: 'incident_assigned',
+            title: `Case assigned: ${incident.caseNumber || incident.title}`,
+            message: `You were assigned to ${incident.title}`,
+            link: `/incidents/${incident._id}`,
+            metadata: { incidentId: incident._id },
+          });
+
+          await recordAudit({
+            action: 'incident_assigned',
+            entityType: 'incident',
+            entityId: incident._id,
+            incidentId: incident._id,
+            user: req.user,
+            details: { assignedTo: analyst.email, caseNumber: incident.caseNumber },
+          });
+        }
       }
     }
 
     await incident.save();
+
+    if (status && status !== previousStatus) {
+      await recordAudit({
+        action: 'incident_status_changed',
+        entityType: 'incident',
+        entityId: incident._id,
+        incidentId: incident._id,
+        user: req.user,
+        details: { from: previousStatus, to: status, caseNumber: incident.caseNumber },
+      });
+    }
+
+    if (priority && priority !== previousPriority) {
+      await recordAudit({
+        action: 'incident_priority_changed',
+        entityType: 'incident',
+        entityId: incident._id,
+        incidentId: incident._id,
+        user: req.user,
+        details: { from: previousPriority, to: priority, caseNumber: incident.caseNumber },
+      });
+    }
 
     const populated = await Incident.findById(incident._id).populate('assignedAnalyst', 'name email');
     const json = populated.toPublicJSON();
@@ -222,6 +288,78 @@ export async function refreshTimeline(req, res, next) {
     res.json({ incident: incident.toPublicJSON() });
   } catch (err) {
     if (err.status === 404) return res.status(404).json({ error: 'Incident not found', code: 'NOT_FOUND' });
+    next(err);
+  }
+}
+
+export async function addIncidentNote(req, res, next) {
+  try {
+    const incident = await Incident.findById(req.params.id);
+    assertDocumentOwner(incident, req.user._id);
+
+    const note = addCaseNote(incident, req.user, req.body.body);
+    await incident.save();
+
+    await recordAudit({
+      action: 'case_note_added',
+      entityType: 'incident',
+      entityId: incident._id,
+      incidentId: incident._id,
+      user: req.user,
+      details: { caseNumber: incident.caseNumber, preview: req.body.body.slice(0, 120) },
+    });
+
+    res.status(201).json({ note, incident: incident.toPublicJSON() });
+  } catch (err) {
+    if (err.status === 404) return res.status(404).json({ error: 'Incident not found', code: 'NOT_FOUND' });
+    next(err);
+  }
+}
+
+export async function addIncidentTask(req, res, next) {
+  try {
+    const incident = await Incident.findById(req.params.id);
+    assertDocumentOwner(incident, req.user._id);
+
+    const task = addCaseTask(incident, req.user, req.body);
+    await incident.save();
+
+    await recordAudit({
+      action: 'case_task_added',
+      entityType: 'incident',
+      entityId: incident._id,
+      incidentId: incident._id,
+      user: req.user,
+      details: { title: task.title, caseNumber: incident.caseNumber },
+    });
+
+    res.status(201).json({ task, incident: incident.toPublicJSON() });
+  } catch (err) {
+    if (err.status === 404) return res.status(404).json({ error: 'Incident not found', code: 'NOT_FOUND' });
+    next(err);
+  }
+}
+
+export async function updateIncidentTask(req, res, next) {
+  try {
+    const incident = await Incident.findById(req.params.id);
+    assertDocumentOwner(incident, req.user._id);
+
+    const task = updateCaseTask(incident, req.params.taskId, req.body);
+    await incident.save();
+
+    await recordAudit({
+      action: 'case_task_updated',
+      entityType: 'incident',
+      entityId: incident._id,
+      incidentId: incident._id,
+      user: req.user,
+      details: { taskId: req.params.taskId, status: task.status, caseNumber: incident.caseNumber },
+    });
+
+    res.json({ task, incident: incident.toPublicJSON() });
+  } catch (err) {
+    if (err.status === 404) return res.status(404).json({ error: err.message, code: 'NOT_FOUND' });
     next(err);
   }
 }

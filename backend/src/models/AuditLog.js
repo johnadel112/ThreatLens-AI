@@ -1,11 +1,11 @@
 import mongoose from 'mongoose';
-import { AUDIT_ACTIONS } from '../config/constants.js';
+import { AUDIT_ACTIONS, ENTITY_TYPES } from '../config/constants.js';
 
 const auditLogSchema = new mongoose.Schema(
   {
     action: { type: String, enum: AUDIT_ACTIONS, required: true, index: true },
-    entityType: { type: String, default: 'playbook_action' },
-    entityId: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
+    entityType: { type: String, enum: ENTITY_TYPES, default: 'playbook_action' },
+    entityId: { type: mongoose.Schema.Types.ObjectId, index: true },
     incidentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Incident', index: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     userName: String,

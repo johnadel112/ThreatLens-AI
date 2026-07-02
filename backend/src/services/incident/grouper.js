@@ -10,6 +10,9 @@ import {
   computeIncidentRiskScore,
   computeConfidenceScore,
 } from '../intelligence/riskScoring.service.js';
+import { ensureCaseFields, deriveCasePriority } from './caseService.js';
+import { recordAudit } from '../playbook/auditService.js';
+import { notifyUser } from '../notifications/notificationService.js';
 
 const GROUPING_WINDOW_MINUTES = 60;
 const OPEN_INCIDENT_STATUSES = ['new', 'investigating', 'contained'];
@@ -134,11 +137,39 @@ export async function groupAlertIntoIncident(alert) {
       title: deriveIncidentTitle([alert]),
       severity: alert.severity,
       status: 'new',
+      priority: deriveCasePriority(alert.severity),
       alerts: [alert._id],
       username: alert.username,
       ip: alert.ip,
       relatedEvents: alert.relatedEvents || [],
       timeline: [],
+      tags: [],
+      notes: [],
+      tasks: [],
+    });
+
+    await ensureCaseFields(incident);
+    await incident.save();
+
+    await recordAudit({
+      action: 'incident_created',
+      entityType: 'incident',
+      entityId: incident._id,
+      incidentId: incident._id,
+      details: {
+        title: incident.title,
+        severity: incident.severity,
+        caseNumber: incident.caseNumber,
+        ruleId: alert.ruleId,
+      },
+    });
+
+    await notifyUser(alert.userId, {
+      type: 'incident_created',
+      title: `New incident: ${incident.title}`,
+      message: `Case ${incident.caseNumber} opened — ${alert.severity} severity`,
+      link: `/incidents/${incident._id}`,
+      metadata: { incidentId: incident._id, caseNumber: incident.caseNumber },
     });
 
     alert.incidentId = incident._id;

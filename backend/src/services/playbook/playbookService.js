@@ -3,6 +3,7 @@ import PlaybookAction from '../../models/PlaybookAction.js';
 import { PLAYBOOK_ACTION_TYPES } from '../../config/constants.js';
 import { recordAudit } from './auditService.js';
 import { executePlaybookAction } from './executor.js';
+import { notifyUser } from '../notifications/notificationService.js';
 import { assertDocumentOwner } from '../../utils/ownerScope.js';
 
 function normalizeActionType(actionType) {
@@ -51,6 +52,22 @@ export async function syncPlaybookActionsFromRecommendations(incident, recommend
 
     existingTypes.add(actionType);
     created.push(action);
+
+    await recordAudit({
+      action: 'playbook_created',
+      entityType: 'playbook_action',
+      entityId: action._id,
+      incidentId: incident._id,
+      details: { actionType, description: rec.description, source: 'ai_mitigation' },
+    });
+
+    await notifyUser(incident.userId, {
+      type: 'playbook_pending',
+      title: 'AI mitigation pending approval',
+      message: `${actionType.replace(/_/g, ' ')} — ${rec.description}`,
+      link: `/incidents/${incident._id}?tab=playbook`,
+      metadata: { incidentId: incident._id, actionId: action._id },
+    });
   }
 
   return created;
@@ -182,6 +199,14 @@ export async function executePlaybookActionById(actionId, user) {
       success: result.success,
       message: result.message,
     },
+  });
+
+  await notifyUser(action.userId, {
+    type: 'playbook_executed',
+    title: `Playbook executed: ${action.actionType.replace(/_/g, ' ')}`,
+    message: result.message,
+    link: `/incidents/${action.incidentId}?tab=playbook`,
+    metadata: { incidentId: action.incidentId, actionId: action._id },
   });
 
   const incident = await Incident.findById(action.incidentId);

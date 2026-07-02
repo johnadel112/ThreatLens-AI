@@ -1,5 +1,11 @@
 import mongoose from 'mongoose';
-import { INCIDENT_STATUSES, INVESTIGATION_STATUSES, SEVERITIES } from '../config/constants.js';
+import {
+  CASE_PRIORITIES,
+  CASE_TASK_STATUSES,
+  INCIDENT_STATUSES,
+  INVESTIGATION_STATUSES,
+  SEVERITIES,
+} from '../config/constants.js';
 
 const timelineEntrySchema = new mongoose.Schema(
   {
@@ -12,10 +18,41 @@ const timelineEntrySchema = new mongoose.Schema(
   { _id: false }
 );
 
+const caseNoteSchema = new mongoose.Schema(
+  {
+    authorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    authorName: String,
+    body: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now },
+  },
+  { _id: true }
+);
+
+const caseTaskSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    status: { type: String, enum: CASE_TASK_STATUSES, default: 'open' },
+    assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    assignedName: String,
+    dueAt: Date,
+    completedAt: Date,
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    createdByName: String,
+    createdAt: { type: Date, default: Date.now },
+  },
+  { _id: true }
+);
+
 const incidentSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    caseNumber: { type: String, index: true },
     title: { type: String, required: true },
+    priority: { type: String, enum: CASE_PRIORITIES, default: 'P2', index: true },
+    tags: [{ type: String, trim: true }],
+    notes: [caseNoteSchema],
+    tasks: [caseTaskSchema],
+    slaDueAt: Date,
     severity: { type: String, enum: SEVERITIES, default: 'high', index: true },
     status: { type: String, enum: INCIDENT_STATUSES, default: 'new', index: true },
     alerts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Alert' }],
@@ -102,12 +139,19 @@ const incidentSchema = new mongoose.Schema(
 
 incidentSchema.index({ username: 1, createdAt: -1 });
 incidentSchema.index({ ip: 1, createdAt: -1 });
+incidentSchema.index({ userId: 1, caseNumber: 1 }, { unique: true, sparse: true });
 
 incidentSchema.methods.toPublicJSON = function toPublicJSON() {
   return {
     id: this._id,
     userId: this.userId,
+    caseNumber: this.caseNumber,
     title: this.title,
+    priority: this.priority,
+    tags: this.tags,
+    notes: this.notes,
+    tasks: this.tasks,
+    slaDueAt: this.slaDueAt,
     severity: this.severity,
     status: this.status,
     alerts: this.alerts,

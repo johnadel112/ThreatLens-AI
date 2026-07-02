@@ -12,6 +12,10 @@ import Login from './pages/Login';
 import Reports from './pages/Reports';
 import ReportDetail from './pages/ReportDetail';
 import Register from './pages/Register';
+import AuditLogs from './pages/AuditLogs';
+import DetectionRules from './pages/DetectionRules';
+import Notifications from './pages/Notifications';
+import PlaybookQueue from './pages/PlaybookQueue';
 
 export default function App() {
   return (
@@ -48,6 +52,10 @@ export default function App() {
         <Route path="incidents/:id/agents" element={<AgentActivity />} />
         <Route path="reports" element={<Reports />} />
         <Route path="reports/:id" element={<ReportDetail />} />
+        <Route path="audit" element={<AuditLogs />} />
+        <Route path="rules" element={<DetectionRules />} />
+        <Route path="notifications" element={<Notifications />} />
+        <Route path="playbooks" element={<PlaybookQueue />} />
       </Route>
     </Routes>
   );

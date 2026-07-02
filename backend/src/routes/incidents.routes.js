@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import {
+  addIncidentNote,
+  addIncidentTask,
   getIncident,
   getIncidentAgentOutputs,
   getIncidentStats,
@@ -8,12 +10,13 @@ import {
   listIncidents,
   refreshTimeline,
   updateIncident,
+  updateIncidentTask,
 } from '../controllers/incidents.controller.js';
 import { authenticate } from '../middleware/auth.js';
 import { authorize } from '../middleware/rbac.js';
 import { ROLES } from '../config/constants.js';
 import { validate } from '../middleware/validate.js';
-import { listIncidentsValidator, updateIncidentValidator } from '../validators/incident.validator.js';
+import { listIncidentsValidator, updateIncidentValidator, addNoteValidator, addTaskValidator, updateTaskValidator } from '../validators/incident.validator.js';
 
 const router = Router();
 
@@ -46,6 +49,30 @@ router.post(
   authenticate,
   authorize(ROLES.ADMIN, ROLES.ANALYST),
   refreshTimeline
+);
+router.post(
+  '/:id/notes',
+  authenticate,
+  authorize(ROLES.ADMIN, ROLES.ANALYST),
+  addNoteValidator,
+  validate,
+  addIncidentNote
+);
+router.post(
+  '/:id/tasks',
+  authenticate,
+  authorize(ROLES.ADMIN, ROLES.ANALYST),
+  addTaskValidator,
+  validate,
+  addIncidentTask
+);
+router.patch(
+  '/:id/tasks/:taskId',
+  authenticate,
+  authorize(ROLES.ADMIN, ROLES.ANALYST),
+  updateTaskValidator,
+  validate,
+  updateIncidentTask
 );
 
 export default router;
