@@ -81,6 +81,15 @@
     @apply bg-soc-accent/10 text-soc-accent border border-soc-accent/20 shadow-glow-cyan;
   }
 
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   .agent-scan::after {
     content: '';
     @apply absolute inset-0 rounded-xl;
