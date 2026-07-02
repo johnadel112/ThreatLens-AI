@@ -78,6 +78,8 @@ export const ENTITY_TYPES = [
   'detection_rule',
   'playbook_template',
   'notification',
+  'security',
+  'user',
 ];
 
 export const AUDIT_ACTIONS = [
@@ -96,4 +98,6 @@ export const AUDIT_ACTIONS = [
   'rule_enabled',
   'rule_disabled',
   'rule_updated',
+  'forbidden_action_attempt',
+  'user_role_changed',
 ];
