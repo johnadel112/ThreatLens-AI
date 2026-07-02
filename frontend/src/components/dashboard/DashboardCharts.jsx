@@ -22,11 +22,25 @@ const tooltipStyle = {
   backdropFilter: 'blur(8px)',
 };
 
-function ChartShell({ title, children, className = '' }) {
+function ChartShell({ title, subtitle, stats = [], children, className = '' }) {
   return (
-    <div className={`glass-panel ${className}`}>
-      <h3 className="text-sm font-semibold text-white mb-4">{title}</h3>
-      <div className="h-64">{children}</div>
+    <div className={`glass-panel p-4 sm:p-5 ${className}`}>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+        <div>
+          <h3 className="text-sm font-semibold text-white">{title}</h3>
+          {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
+        </div>
+        {stats.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {stats.map((stat) => (
+              <span key={stat.label} className="text-[10px] px-2 py-1 rounded-md border border-white/[0.06] bg-black/20 text-gray-400">
+                {stat.label}: <span className="text-white font-mono">{stat.value}</span>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="h-56 sm:h-64">{children}</div>
     </div>
   );
 }
@@ -35,7 +49,7 @@ export function KpiGrid({ stats }) {
   const cards = [
     { label: 'Security Events', value: stats?.events?.total ?? 0, sub: 'Last 7 days trend below' },
     { label: 'Open Alerts', value: stats?.alerts?.openCount ?? 0, sub: `${stats?.alerts?.total ?? 0} total alerts` },
-    { label: 'Active Incidents', value: stats?.incidents?.openCount ?? 0, sub: `${stats?.incidents?.total ?? 0} total incidents` },
+    { label: 'Active Cases', value: stats?.incidents?.openCount ?? 0, sub: `${stats?.incidents?.total ?? 0} total cases` },
     { label: 'Playbook Actions', value: stats?.playbooks?.pendingCount ?? 0, sub: `${stats?.playbooks?.executedCount ?? 0} executed` },
   ];
 
@@ -70,9 +84,21 @@ export function EventVolumeHourlyChart({ events = [], hourlyTimeline = [] }) {
     ? hourlyTimeline
     : hourlyVolumeFromEvents(events);
   const hasData = data.some((d) => d.count > 0);
+  const counts = data.map((d) => d.count || 0);
+  const peak = counts.length ? Math.max(...counts) : 0;
+  const average = counts.length ? Math.round(counts.reduce((a, b) => a + b, 0) / counts.length) : 0;
+  const current = counts.length ? counts[counts.length - 1] : 0;
 
   return (
-    <ChartShell title="Event Volume (Last 24 Hours)">
+    <ChartShell
+      title="Event Volume (Last 24 Hours)"
+      subtitle="Live telemetry throughput"
+      stats={[
+        { label: 'Peak', value: `${peak}/hr` },
+        { label: 'Average', value: `${average}/hr` },
+        { label: 'Current', value: `${current}/hr` },
+      ]}
+    >
       {!hasData ? (
         <ChartEmpty />
       ) : (
@@ -154,9 +180,9 @@ export function SeverityCharts({ alerts, incidents }) {
         )}
       </ChartShell>
 
-      <ChartShell title="Incidents by Severity">
+      <ChartShell title="Cases by Severity">
         {incidentsEmpty ? (
-          <ChartEmpty message="No incidents recorded yet" />
+          <ChartEmpty message="No cases recorded yet" />
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={incidentData}>
@@ -196,7 +222,7 @@ export function StatusPieCharts({ alerts, incidents }) {
         </ResponsiveContainer>
       </ChartShell>
 
-      <ChartShell title="Incident Status">
+      <ChartShell title="Case Status">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie data={incidentData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
