@@ -13,7 +13,7 @@ const primaryItems = [
 
 export default function MobileBottomNav() {
   return (
-    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-50 border-t border-white/[0.08] bg-[#080b10]/95 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-white/[0.08] bg-[#080b10]/95 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
       <div className="grid grid-cols-5">
         {primaryItems.map(({ to, label, icon: Icon, end }) => (
           <NavLink
