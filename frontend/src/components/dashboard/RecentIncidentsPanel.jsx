@@ -17,7 +17,7 @@ const statusStyles = {
 
 export default function RecentIncidentsPanel({ incidents = [] }) {
   if (incidents.length === 0) {
-    return <p className="text-sm text-gray-500 text-center py-6">No incidents yet — detection engine monitoring.</p>;
+    return <p className="text-sm text-gray-500 text-center py-6">No active cases yet — detection engine monitoring.</p>;
   }
 
   return (

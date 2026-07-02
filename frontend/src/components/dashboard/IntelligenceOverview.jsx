@@ -7,7 +7,7 @@ export default function IntelligenceOverview({ incidents = [] }) {
   if (!incidents.length) {
     return (
       <p className="text-sm text-gray-500 text-center py-4">
-        Risk intelligence will appear as incidents are correlated.
+        Risk intelligence will appear as cases are correlated.
       </p>
     );
   }
