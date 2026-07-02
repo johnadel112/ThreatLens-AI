@@ -1,0 +1,72 @@
+[
+  {
+    "id": "mitre-t1110-brute-force",
+    "category": "mitre",
+    "tags": ["brute_force", "credential", "login_failed", "T1110"],
+    "title": "MITRE T1110 — Brute Force",
+    "content": "Brute Force (T1110) is a Credential Access technique where adversaries attempt to guess passwords or PINs. SOC indicators: repeated login_failed events, same source IP, spike within minutes, followed by login_success. Response: lock account, block IP, force MFA, review auth logs."
+  },
+  {
+    "id": "mitre-t1078-valid-accounts",
+    "category": "mitre",
+    "tags": ["suspicious_login", "login_success", "T1078", "compromise"],
+    "title": "MITRE T1078 — Valid Accounts",
+    "content": "Valid Accounts (T1078) covers use of legitimate credentials. Suspicious when preceded by failed logins, off-hours access, or new geo/device. Response: session revocation, password reset, UEBA review."
+  },
+  {
+    "id": "mitre-t1020-exfiltration",
+    "category": "mitre",
+    "tags": ["file_download", "exfiltration", "T1020", "data_exfil"],
+    "title": "MITRE T1020 — Automated Exfiltration",
+    "content": "Automated Exfiltration (T1020) involves bulk data transfer. Indicators: high file_download volume, unusual endpoints, post-compromise timing. Response: isolate host, block egress, preserve forensic copies."
+  },
+  {
+    "id": "playbook-brute-force",
+    "category": "playbook",
+    "tags": ["brute_force", "brute_force_v1", "credential"],
+    "title": "Brute Force Response Playbook",
+    "content": "1) Lock affected account 2) Block source IP 3) Force password reset 4) Require MFA 5) Notify security team 6) Monitor subsequent logins 7) Document in SOC report. Human approval required before execution."
+  },
+  {
+    "id": "playbook-account-compromise",
+    "category": "playbook",
+    "tags": ["suspicious_login", "compromise", "account"],
+    "title": "Account Compromise Playbook",
+    "content": "1) Revoke active sessions 2) Reset credentials 3) Review permission changes 4) Hunt for lateral movement 5) Check data access logs 6) Escalate if admin account affected."
+  },
+  {
+    "id": "playbook-data-exfil",
+    "category": "playbook",
+    "tags": ["data_exfil", "file_download", "exfiltration"],
+    "title": "Data Exfiltration Playbook",
+    "content": "1) Isolate affected endpoint 2) Block suspicious egress IPs 3) Preserve download audit trail 4) Notify data owner 5) Assess scope of files accessed 6) Open incident for legal/compliance if needed."
+  },
+  {
+    "id": "detection-brute-force-rule",
+    "category": "detection",
+    "tags": ["brute_force_v1", "rule", "detection"],
+    "title": "Brute Force Detection Rule",
+    "content": "Rule brute_force_v1: >5 failed auth events within 5 minutes per username OR source IP. Severity: high. Correlates with suspicious_login_v1 when success follows failures."
+  },
+  {
+    "id": "detection-exfil-rule",
+    "category": "detection",
+    "tags": ["data_exfil_v1", "rule", "detection"],
+    "title": "Data Exfiltration Detection Rule",
+    "content": "Rule data_exfil_v1: >30 file downloads within 10 minutes per user. Severity: critical. Often appears in account compromise chains after credential access."
+  },
+  {
+    "id": "soc-report-template",
+    "category": "report",
+    "tags": ["report", "soc", "template"],
+    "title": "SOC Report Quality Checklist",
+    "content": "A complete SOC report includes: executive summary, incident metadata, MITRE mapping, correlated timeline, evidence table with event IDs, alert summaries, root cause, impact, mitigation, playbook actions, reviewer quality score, and final conclusion."
+  },
+  {
+    "id": "response-checklist-critical",
+    "category": "checklist",
+    "tags": ["critical", "P1", "escalation"],
+    "title": "Critical Incident Response Checklist",
+    "content": "For P1/critical: assign owner within 15 min, begin containment, preserve evidence, notify stakeholders, run AI investigation, approve playbooks manually, generate SOC report within SLA."
+  }
+]

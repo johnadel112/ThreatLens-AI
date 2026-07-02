@@ -10,6 +10,7 @@ class InvestigationState(TypedDict, total=False):
     classification: dict[str, Any]
     mitigation: dict[str, Any]
     report: dict[str, Any]
-    review: dict[str, Any]
+    reviewer: dict[str, Any]
+    knowledge_sources: list[str]
     errors: list[str]
     source: str
