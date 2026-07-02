@@ -129,6 +129,7 @@ export default function Incidents() {
         <TableSkeleton rows={4} />
       ) : incidents.length === 0 ? (
         <EmptyState
+          variant="cases"
           icon={FolderKanban}
           title="No cases yet"
           description="Cases appear when related alerts are grouped from your live event stream."

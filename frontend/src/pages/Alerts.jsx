@@ -180,6 +180,7 @@ export default function Alerts() {
           <TableSkeleton rows={4} />
         ) : alerts.length === 0 ? (
           <EmptyState
+            variant="alerts"
             icon={Bell}
             title="No alerts yet"
             description="Live monitoring will create alerts when detection rules trigger on your event stream."

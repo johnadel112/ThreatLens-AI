@@ -103,6 +103,13 @@
   100% { transform: translateX(100%); }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse-slow,
+  .agent-scan::after {
+    animation: none !important;
+  }
+}
+
 .markdown-report h1 {
   @apply text-2xl font-bold text-white mb-4;
 }

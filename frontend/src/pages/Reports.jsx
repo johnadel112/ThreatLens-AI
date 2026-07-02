@@ -41,7 +41,7 @@ export default function Reports() {
     <div>
       <PageHeader
         title="SOC Reports"
-        subtitle="AI-assisted investigation reports from completed incident workflows"
+        subtitle="AI-assisted investigation reports from completed case workflows"
       />
 
       {error && (
@@ -54,6 +54,7 @@ export default function Reports() {
         <TableSkeleton rows={5} />
       ) : reports.length === 0 ? (
         <EmptyState
+          variant="reports"
           icon={FileText}
           title="No reports yet"
           description="Complete an AI investigation on an incident, then generate a professional SOC report."

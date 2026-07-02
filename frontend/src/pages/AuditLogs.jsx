@@ -81,7 +81,7 @@ export default function AuditLogs() {
         {loading ? (
           <div className="p-5"><TableSkeleton rows={6} /></div>
         ) : logs.length === 0 ? (
-          <EmptyState icon={ScrollText} title="No audit entries" description="Actions across incidents, playbooks, and rules will appear here." />
+          <EmptyState variant="audit" icon={ScrollText} title="No audit entries" description="Actions across incidents, playbooks, and rules will appear here." />
         ) : (
         <>
           <div className="md:hidden space-y-3 p-4">

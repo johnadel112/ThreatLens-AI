@@ -84,11 +84,13 @@ export default function Layout() {
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 pb-24 md:pb-6 overflow-x-hidden overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 pb-24 md:pb-6 overflow-x-hidden overflow-y-auto relative">
+          <div className="pointer-events-none absolute inset-0 bg-cyber-grid bg-grid opacity-[0.15] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" aria-hidden />
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35 }}
+            className="relative"
           >
             <ViewerNotice />
             <Outlet />

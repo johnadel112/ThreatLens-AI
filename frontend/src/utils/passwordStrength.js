@@ -166,9 +166,7 @@ export function evaluatePasswordStrength(password, context = {}) {
     score = 2;
   }
 
-  if (hasUserInfo && score > 2) score = Math.min(score, 3);
   if (!checks.notCommon && score > 2) score = 2;
-  if (!checks.noRepeatedPatterns && score > 3) score = 3;
 
   const percentage = Math.round((score / 5) * 100);
 

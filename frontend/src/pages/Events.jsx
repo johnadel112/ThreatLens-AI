@@ -154,6 +154,7 @@ export default function Events() {
         <TableSkeleton rows={8} />
       ) : events.length === 0 ? (
         <EmptyState
+          variant="events"
           icon={Radio}
           title="No events yet"
           description="Live monitoring will populate this feed automatically. Events appear within seconds of login."

@@ -1,12 +1,20 @@
 import MitreTechniqueBadge from '../ui/MitreTechniqueBadge';
 import RiskScoreBadge from '../ui/RiskScoreBadge';
+import EmptyStateArt from '../visuals/EmptyStateArt';
 
 export default function AISummaryPanel({ incident, onRetry }) {
   if (!incident?.aiSummary && incident?.investigationStatus === 'not_started') {
     return (
-      <p className="text-sm text-gray-500">
-        Run AI investigation to generate an evidence-based summary.
-      </p>
+      <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+        <EmptyStateArt variant="ai" className="shrink-0 opacity-90" />
+        <div>
+          <p className="text-sm text-gray-400 leading-relaxed">
+            Run AI investigation to generate an evidence-based summary with threat classification
+            and mitigation recommendations.
+          </p>
+          <p className="text-xs text-gray-600 mt-2">Multi-agent pipeline: Triage → Investigation → Report</p>
+        </div>
+      </div>
     );
   }
 
