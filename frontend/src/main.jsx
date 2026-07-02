@@ -12,9 +12,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <AuthProvider>
         <App />
         <Toaster
-          position="top-right"
+          position="bottom-right"
+          containerStyle={{ bottom: 24, right: 24 }}
           toastOptions={{
-            className: 'glass-panel !bg-soc-surface-solid !text-gray-200 !border-white/10 !text-sm',
+            className: 'glass-panel !bg-soc-surface-solid !text-gray-200 !border-white/10 !text-sm !shadow-xl',
             duration: 3000,
           }}
         />

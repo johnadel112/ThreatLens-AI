@@ -89,7 +89,7 @@ export default function Layout() {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 border-b border-white/[0.06] bg-black/10 backdrop-blur-md flex items-center px-6 gap-4">
+        <header className="sticky top-0 z-40 h-14 border-b border-white/[0.06] bg-[#0a0e14]/90 backdrop-blur-md flex items-center px-6 gap-4">
           <span className="text-sm text-gray-400 hidden sm:block">Live AI Security Operations</span>
           <div className="ml-auto flex items-center gap-4">
             <LivePulseIndicator active={liveMonitoring} />
