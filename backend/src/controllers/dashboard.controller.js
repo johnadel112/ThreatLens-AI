@@ -69,6 +69,12 @@ export async function getDashboardStats(req, res, next) {
       playbookPending,
       playbookExecuted,
       topRiskyIncidents,
+      eventsLastHour,
+      eventsPreviousHour,
+      casesNeedingAction,
+      aiInvestigationsToday,
+      reportsGeneratedToday,
+      topSuspiciousIps,
     ] = await Promise.all([
       SecurityEvent.countDocuments(userMatch),
       SecurityEvent.aggregate([
@@ -143,11 +149,45 @@ export async function getDashboardStats(req, res, next) {
         .limit(5)
         .select('title severity status riskScore correlationScore confidenceScore username ip mitre')
         .lean(),
+      SecurityEvent.countDocuments({ ...userMatch, timestamp: { $gte: new Date(Date.now() - 60 * 60 * 1000) } }),
+      SecurityEvent.countDocuments({
+        ...userMatch,
+        timestamp: {
+          $gte: new Date(Date.now() - 2 * 60 * 60 * 1000),
+          $lt: new Date(Date.now() - 60 * 60 * 1000),
+        },
+      }),
+      Incident.countDocuments({
+        ...userMatch,
+        status: { $in: ['new', 'investigating'] },
+        $or: [{ assignedAnalyst: { $exists: false } }, { assignedAnalyst: null }],
+      }),
+      Incident.countDocuments({
+        ...userMatch,
+        investigationStatus: 'completed',
+        updatedAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+      }),
+      Incident.countDocuments({
+        ...userMatch,
+        'report.generatedAt': { $gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+      }),
+      SecurityEvent.aggregate([
+        { $match: { ...userMatch, timestamp: { $gte: twentyFourHoursAgo }, ip: { $exists: true, $ne: null } } },
+        { $group: { _id: '$ip', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 5 },
+      ]),
     ]);
+
+    const openCriticalAlerts = alertsOpenBySeverity.find((s) => s._id === 'critical')?.count || 0;
+    const openHighAlerts = alertsOpenBySeverity.find((s) => s._id === 'high')?.count || 0;
+    const openCriticalCases = incidentsOpenBySeverity.find((s) => s._id === 'critical')?.count || 0;
 
     res.json({
       events: {
         total: eventTotal,
+        lastHour: eventsLastHour,
+        previousHour: eventsPreviousHour,
         bySeverity: eventsBySeverity.map((s) => ({ severity: s._id, count: s.count })),
         byType: eventsByType.map((t) => ({ eventType: t._id, count: t.count })),
         timeline: fillLast7Days(
@@ -175,6 +215,22 @@ export async function getDashboardStats(req, res, next) {
         pendingCount: playbookPending,
         executedCount: playbookExecuted,
       },
+      pipeline: {
+        eventsProcessed: eventTotal,
+        alertsGenerated: alertTotal,
+        alertsOpen: alertOpen,
+        alertsOpenCritical: openCriticalAlerts,
+        casesActive: incidentOpen,
+        casesOpenCritical: openCriticalCases,
+        aiInvestigationsToday,
+        reportsGeneratedToday,
+        playbooksPending: playbookPending,
+      },
+      operations: {
+        casesNeedingAction: casesNeedingAction + playbookPending,
+        unassignedCases: casesNeedingAction,
+        playbooksAwaitingApproval: playbookPending,
+      },
       intelligence: {
         topRiskyIncidents: topRiskyIncidents.map((inc) => ({
           id: inc._id,
@@ -189,6 +245,7 @@ export async function getDashboardStats(req, res, next) {
           mitreTactic: inc.mitre?.primaryTactic,
         })),
         mitreByTactic: aggregateMitreTactics(topRiskyIncidents),
+        topSuspiciousIps: topSuspiciousIps.map((row) => ({ ip: row._id, count: row.count })),
       },
     });
   } catch (err) {
