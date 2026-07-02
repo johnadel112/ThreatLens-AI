@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import AuthLayout from '../components/auth/AuthLayout';
+import PasswordStrengthMeter from '../components/auth/PasswordStrengthMeter';
+import RoleSelector from '../components/auth/RoleSelector';
 
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'analyst' });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -44,7 +47,7 @@ export default function Register() {
 
   return (
     <AuthLayout title="Create account" subtitle="Join the ThreatLens AI security operations platform">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
           <div className="px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/25 text-sm text-red-300">
             {error}
@@ -65,6 +68,7 @@ export default function Register() {
             id="name"
             type="text"
             required
+            autoComplete="name"
             value={form.name}
             onChange={(e) => updateField('name', e.target.value)}
             className="input-field"
@@ -77,41 +81,52 @@ export default function Register() {
             id="email"
             type="email"
             required
+            autoComplete="email"
             value={form.email}
             onChange={(e) => updateField('email', e.target.value)}
             className="input-field"
+            placeholder="you@example.com"
           />
         </div>
 
         <div>
           <label htmlFor="password" className="block text-sm text-gray-400 mb-1.5">Password</label>
-          <input
-            id="password"
-            type="password"
-            required
-            minLength={8}
-            value={form.password}
-            onChange={(e) => updateField('password', e.target.value)}
-            className="input-field"
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              required
+              minLength={8}
+              autoComplete="new-password"
+              value={form.password}
+              onChange={(e) => updateField('password', e.target.value)}
+              className="input-field pr-12"
+              placeholder="Create a strong password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-gray-500 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          <PasswordStrengthMeter
+            password={form.password}
+            email={form.email}
+            name={form.name}
           />
-          <p className="text-xs text-gray-600 mt-1.5">Min 8 characters, include a letter and number</p>
+          {!form.password && (
+            <p className="text-xs text-gray-600 mt-2">
+              Min 8 characters with at least one letter and one number.
+            </p>
+          )}
         </div>
 
-        <div>
-          <label htmlFor="role" className="block text-sm text-gray-400 mb-1.5">Role</label>
-          <select
-            id="role"
-            value={form.role}
-            onChange={(e) => updateField('role', e.target.value)}
-            className="input-field"
-          >
-            <option value="viewer">Viewer — read-only dashboard access</option>
-            <option value="analyst">Analyst — investigate cases and approve SOAR actions</option>
-            <option value="admin">Admin — full access including detection rule management</option>
-          </select>
-        </div>
+        <RoleSelector value={form.role} onChange={(role) => updateField('role', role)} />
 
-        <button type="submit" disabled={submitting} className="btn-primary w-full mt-2">
+        <button type="submit" disabled={submitting} className="btn-primary w-full min-h-[48px]">
           {submitting ? 'Creating account…' : 'Create Account'}
         </button>
       </form>
