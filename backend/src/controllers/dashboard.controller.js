@@ -21,6 +21,16 @@ function fillLast24Hours(timeline) {
   return buckets;
 }
 
+function aggregateMitreTactics(incidents = []) {
+  const counts = {};
+  for (const inc of incidents) {
+    const tactic = inc.mitre?.primaryTactic;
+    if (!tactic || tactic === 'Unknown') continue;
+    counts[tactic] = (counts[tactic] || 0) + 1;
+  }
+  return Object.entries(counts).map(([tactic, count]) => ({ tactic, count }));
+}
+
 function fillLast7Days(timeline) {
   const map = Object.fromEntries(timeline.map((d) => [d.date, d.count]));
   const days = [];
@@ -58,6 +68,7 @@ export async function getDashboardStats(req, res, next) {
       incidentsByStatus,
       playbookPending,
       playbookExecuted,
+      topRiskyIncidents,
     ] = await Promise.all([
       SecurityEvent.countDocuments(userMatch),
       SecurityEvent.aggregate([
@@ -127,6 +138,11 @@ export async function getDashboardStats(req, res, next) {
       ]),
       PlaybookAction.countDocuments({ ...userMatch, status: 'pending' }),
       PlaybookAction.countDocuments({ ...userMatch, status: 'executed' }),
+      Incident.find(userMatch)
+        .sort({ riskScore: -1, correlationScore: -1 })
+        .limit(5)
+        .select('title severity status riskScore correlationScore confidenceScore username ip mitre')
+        .lean(),
     ]);
 
     res.json({
@@ -158,6 +174,21 @@ export async function getDashboardStats(req, res, next) {
       playbooks: {
         pendingCount: playbookPending,
         executedCount: playbookExecuted,
+      },
+      intelligence: {
+        topRiskyIncidents: topRiskyIncidents.map((inc) => ({
+          id: inc._id,
+          title: inc.title,
+          severity: inc.severity,
+          status: inc.status,
+          riskScore: inc.riskScore || 0,
+          correlationScore: inc.correlationScore || 0,
+          confidenceScore: inc.confidenceScore || 0,
+          username: inc.username,
+          ip: inc.ip,
+          mitreTactic: inc.mitre?.primaryTactic,
+        })),
+        mitreByTactic: aggregateMitreTactics(topRiskyIncidents),
       },
     });
   } catch (err) {

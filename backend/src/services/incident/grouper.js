@@ -1,7 +1,15 @@
 import Alert from '../../models/Alert.js';
 import Incident from '../../models/Incident.js';
+import SecurityEvent from '../../models/SecurityEvent.js';
 import { maxSeverity } from '../../config/constants.js';
 import { rebuildIncidentTimeline } from './timelineBuilder.js';
+import { analyzeCorrelation } from '../intelligence/correlation.service.js';
+import { summarizeIncidentMitre } from '../intelligence/mitreMapping.service.js';
+import { enrichIp } from '../intelligence/threatIntel.service.js';
+import {
+  computeIncidentRiskScore,
+  computeConfidenceScore,
+} from '../intelligence/riskScoring.service.js';
 
 const GROUPING_WINDOW_MINUTES = 60;
 const OPEN_INCIDENT_STATUSES = ['new', 'investigating', 'contained'];
@@ -13,9 +21,14 @@ export function deriveIncidentTitle(alerts) {
   const hasDataExfil = ruleIds.includes('data_exfil_v1');
   const hasBruteForce = ruleIds.includes('brute_force_v1');
   const hasPrivEsc = ruleIds.includes('priv_esc_v1');
+  const hasMalware = ruleIds.includes('malware_v1');
+  const hasPortScan = ruleIds.includes('port_scan_v1');
 
   if (hasSuspiciousLogin && hasDataExfil) {
     return 'Possible Account Compromise';
+  }
+  if (hasMalware && hasDataExfil) {
+    return 'Malware Activity with Data Exfiltration';
   }
   if (hasSuspiciousLogin || hasPrivEsc) {
     return 'Possible Account Compromise';
@@ -25,6 +38,9 @@ export function deriveIncidentTitle(alerts) {
   }
   if (hasDataExfil) {
     return 'Possible Data Exfiltration';
+  }
+  if (hasPortScan) {
+    return 'Reconnaissance Activity Detected';
   }
 
   return 'Multi-Stage Suspicious Activity';
@@ -55,6 +71,51 @@ async function refreshIncident(incident) {
   const { timeline, relatedEvents } = await rebuildIncidentTimeline(incident._id);
   incident.timeline = timeline;
   incident.relatedEvents = relatedEvents;
+
+  const events = relatedEvents.length
+    ? await SecurityEvent.find({ _id: { $in: relatedEvents } }).sort({ timestamp: 1 })
+    : [];
+
+  const correlation = analyzeCorrelation({
+    events,
+    alerts,
+    username: incident.username,
+    ip: incident.ip,
+  });
+
+  const mitre = summarizeIncidentMitre(alerts, events);
+  const threatIntel = incident.ip ? { ip: enrichIp(incident.ip) } : undefined;
+
+  incident.correlationScore = correlation.correlationScore;
+  incident.correlation = correlation;
+  incident.mitre = mitre;
+  incident.threatIntel = threatIntel;
+  incident.riskScore = computeIncidentRiskScore({
+    severity: incident.severity,
+    alerts,
+    events,
+    correlationScore: correlation.correlationScore,
+    mitreSummary: mitre,
+    threatIntel: threatIntel?.ip,
+  });
+  incident.confidenceScore = computeConfidenceScore({
+    correlationScore: correlation.correlationScore,
+    alertCount: alerts.length,
+    eventCount: events.length,
+    hasAiSummary: !!incident.aiSummary,
+  });
+
+  if (!incident.threatClassification?.attackType && mitre.primaryTactic !== 'Unknown') {
+    incident.threatClassification = {
+      ...(incident.threatClassification || {}),
+      attackType: incident.threatClassification?.attackType || deriveIncidentTitle(alerts),
+      category: mitre.primaryTactic,
+      mitreTactic: mitre.primaryTactic,
+      mitreTechnique: mitre.techniques[0]?.technique,
+      techniqueId: mitre.techniques[0]?.techniqueId,
+      confidence: incident.confidenceScore / 100,
+    };
+  }
 
   await incident.save();
   return incident;

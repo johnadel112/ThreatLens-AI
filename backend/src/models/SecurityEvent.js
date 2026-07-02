@@ -11,6 +11,10 @@ const securityEventSchema = new mongoose.Schema(
     ip: { type: String, trim: true, index: true },
     metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
     severity: { type: String, enum: SEVERITIES, default: 'low', index: true },
+    riskScore: { type: Number, min: 0, max: 100, index: true },
+    threatIntel: {
+      ip: mongoose.Schema.Types.Mixed,
+    },
     timestamp: { type: Date, required: true, index: true },
     ingestedAt: { type: Date, default: Date.now },
   },
@@ -32,6 +36,8 @@ securityEventSchema.methods.toPublicJSON = function toPublicJSON() {
     ip: this.ip,
     metadata: this.metadata,
     severity: this.severity,
+    riskScore: this.riskScore,
+    threatIntel: this.threatIntel,
     timestamp: this.timestamp,
     ingestedAt: this.ingestedAt,
   };

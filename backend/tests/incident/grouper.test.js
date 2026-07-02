@@ -16,8 +16,8 @@ describe('deriveIncidentTitle', () => {
     assert.equal(deriveIncidentTitle(alerts), 'Brute Force Attack Detected');
   });
 
-  it('returns Multi-Stage for unrelated rules', () => {
+  it('returns Reconnaissance for port scan rule', () => {
     const alerts = [{ ruleId: 'port_scan_v1' }];
-    assert.equal(deriveIncidentTitle(alerts), 'Multi-Stage Suspicious Activity');
+    assert.equal(deriveIncidentTitle(alerts), 'Reconnaissance Activity Detected');
   });
 });

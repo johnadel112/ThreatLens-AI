@@ -2,6 +2,9 @@ import Alert from '../../models/Alert.js';
 import { getRulesForEventType } from './ruleRegistry.js';
 import { hasOpenAlert } from './helpers.js';
 import { groupAlertIntoIncident } from '../incident/grouper.js';
+import { attachMitreToAlertPayload } from '../intelligence/mitreMapping.service.js';
+import { enrichIp } from '../intelligence/threatIntel.service.js';
+import { computeAlertRiskScore } from '../intelligence/riskScoring.service.js';
 
 export async function runDetection(event) {
   const rules = getRulesForEventType(event.eventType);
@@ -25,8 +28,13 @@ export async function runDetection(event) {
 
       if (isDuplicate) continue;
 
+      const enriched = attachMitreToAlertPayload(payload, rule.id);
+      const ipIntel = enriched.ip ? enrichIp(enriched.ip, event.metadata || {}) : null;
+      enriched.threatIntel = ipIntel ? { ip: ipIntel } : undefined;
+      enriched.riskScore = computeAlertRiskScore(enriched, ipIntel);
+
       const alert = await Alert.create({
-        ...payload,
+        ...enriched,
         userId: event.userId,
       });
       await groupAlertIntoIncident(alert);

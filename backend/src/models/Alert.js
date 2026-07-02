@@ -19,6 +19,15 @@ const alertSchema = new mongoose.Schema(
     username: { type: String, index: true },
     ip: { type: String, index: true },
     incidentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Incident', index: true },
+    mitre: {
+      tactic: String,
+      technique: String,
+      techniqueId: String,
+      description: String,
+      recommendedResponse: String,
+    },
+    riskScore: { type: Number, min: 0, max: 100 },
+    threatIntel: mongoose.Schema.Types.Mixed,
   },
   { timestamps: true }
 );
@@ -39,6 +48,9 @@ alertSchema.methods.toPublicJSON = function toPublicJSON() {
     username: this.username,
     ip: this.ip,
     incidentId: this.incidentId,
+    mitre: this.mitre,
+    riskScore: this.riskScore,
+    threatIntel: this.threatIntel,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
   };

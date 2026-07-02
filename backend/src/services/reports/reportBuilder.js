@@ -60,7 +60,22 @@ ${incident.aiSummary || 'No AI summary available.'}
 ## Threat Classification
 - **Attack Type:** ${classification.attackType || 'Under investigation'}
 - **Category:** ${classification.category || 'N/A'}
-- **Confidence:** ${classification.confidence != null ? `${Math.round(classification.confidence * 100)}%` : 'N/A'}
+- **MITRE Tactic:** ${classification.mitreTactic || incident.mitre?.primaryTactic || 'N/A'}
+- **MITRE Technique:** ${classification.mitreTechnique || incident.mitre?.techniques?.[0]?.technique || 'N/A'}
+- **Technique ID:** ${classification.techniqueId || incident.mitre?.techniques?.[0]?.techniqueId || 'N/A'}
+- **Confidence:** ${classification.confidence != null ? `${Math.round(classification.confidence * 100)}%` : incident.confidenceScore != null ? `${incident.confidenceScore}%` : 'N/A'}
+
+## Correlation Analysis
+- **Correlation Score:** ${incident.correlationScore ?? 'N/A'}/100
+- **Risk Score:** ${incident.riskScore ?? 'N/A'}/100
+- **Summary:** ${incident.correlation?.narrative || 'Events grouped by shared user/IP within detection window.'}
+${(incident.correlation?.matchedChains || []).map((c) => `- Chain: ${c.name} (${c.matched ? 'matched' : 'partial'})`).join('\n')}
+
+## Threat Intelligence
+${incident.threatIntel?.ip ? `- **IP Reputation:** ${incident.threatIntel.ip.reputation} (${incident.threatIntel.ip.confidence}% confidence)
+- **Geo:** ${incident.threatIntel.ip.city}, ${incident.threatIntel.ip.country}
+- **ASN:** ${incident.threatIntel.ip.asn}
+- **Known For:** ${(incident.threatIntel.ip.knownFor || []).join(', ')}` : 'No threat intelligence enrichment available.'}
 
 ## AI Triage Summary
 ${triage?.output?.summary || triage?.output?.priority || incident.aiSummary || 'Not available.'}
