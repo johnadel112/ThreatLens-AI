@@ -109,8 +109,26 @@ ${playbookLines.length ? playbookLines.join('\n') : 'No playbook actions recorde
 ## Agent Outputs
 ${agentSections.join('\n') || 'No agent outputs.'}
 
+## AI Explainable Analysis
+${(incident.aiExplainability?.reasoningPoints || []).map((p) => `- ${p}`).join('\n') || incident.aiExplainability?.reasoningSummary || investigation?.output?.reasoningSummary || 'See investigation agent output.'}
+
+**Related Alert IDs:** ${(incident.aiExplainability?.relatedAlertIds || investigation?.output?.relatedAlertIds || []).join(', ') || 'None'}
+**Related Event IDs:** ${(incident.aiExplainability?.relatedEventIds || investigation?.output?.relatedEventIds || []).length || 0} events cited
+${incident.aiExplainability?.knowledgeSources?.length ? `**Knowledge Sources:** ${incident.aiExplainability.knowledgeSources.join(', ')}` : ''}
+
+## Report Quality Assessment
+| Metric | Score |
+|--------|-------|
+| Evidence Completeness | ${incident.reportQuality?.evidenceCompleteness ?? reviewer?.output?.reportQuality?.evidenceCompleteness ?? '—'}% |
+| Timeline Quality | ${incident.reportQuality?.timelineQuality ?? reviewer?.output?.reportQuality?.timelineQuality ?? '—'}% |
+| Threat Classification Confidence | ${incident.reportQuality?.threatClassificationConfidence ?? reviewer?.output?.reportQuality?.threatClassificationConfidence ?? '—'}% |
+| Mitigation Quality | ${incident.reportQuality?.mitigationQuality ?? reviewer?.output?.reportQuality?.mitigationQuality ?? '—'}% |
+| Report Clarity | ${incident.reportQuality?.reportClarity ?? reviewer?.output?.reportQuality?.reportClarity ?? '—'}% |
+| **Overall Confidence** | **${incident.reportQuality?.overallConfidence ?? reviewer?.output?.reportQuality?.overallConfidence ?? '—'}%** |
+
 ## Reviewer Notes
 ${reviewer?.output?.warnings?.length ? reviewer.output.warnings.map((w) => `- ${w}`).join('\n') : reviewer?.output?.notes || 'No reviewer warnings.'}
+${(incident.reportQuality?.missingEvidence || reviewer?.output?.missingEvidence || []).length ? `\n**Missing Evidence:**\n${(incident.reportQuality?.missingEvidence || reviewer?.output?.missingEvidence || []).map((m) => `- ${m}`).join('\n')}` : ''}
 
 ## Final Conclusion
 ${incident.aiSummary || incident.title} — Investigation completed via ThreatLens AI multi-agent workflow. All response actions require human approval before execution.

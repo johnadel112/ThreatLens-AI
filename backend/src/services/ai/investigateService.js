@@ -9,6 +9,7 @@ import {
 } from '../incident/incidentLoader.js';
 import { syncPlaybookActionsFromRecommendations } from '../playbook/playbookService.js';
 import { buildReportForIncident } from '../reports/reportBuilder.js';
+import { extractExplainability } from '../intelligence/reportQuality.service.js';
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -66,6 +67,14 @@ function buildTimelineFromInvestigation(reportOutput, reviewerOutput) {
       description: reviewerOutput.warnings.join('; '),
     });
   }
+  if (reviewerOutput?.reportQuality?.overallConfidence) {
+    entries.push({
+      timestamp: new Date(),
+      source: 'agent',
+      title: 'Report Quality Score',
+      description: `Overall report confidence: ${reviewerOutput.reportQuality.overallConfidence}%`,
+    });
+  }
   return entries;
 }
 
@@ -117,8 +126,41 @@ export async function runBasicInvestigation(incidentId, user) {
     incident.threatClassification = {
       attackType: workflowResult.threat_classification?.attackType,
       category: workflowResult.threat_classification?.category,
+      mitreTactic: workflowResult.threat_classification?.mitreTactic,
+      mitreTechnique: workflowResult.threat_classification?.mitreTechnique,
+      techniqueId: workflowResult.threat_classification?.techniqueId,
       confidence: workflowResult.threat_classification?.confidence,
     };
+
+    const agentOutputsForExtract = workflowResult.agents.map((a) => ({
+      agentName: a.agent_name,
+      output: a.output,
+    }));
+    incident.aiExplainability = extractExplainability(agentOutputsForExtract);
+    if (workflowResult.knowledge_sources?.length) {
+      incident.aiExplainability.knowledgeSources = [
+        ...new Set([
+          ...(incident.aiExplainability.knowledgeSources || []),
+          ...workflowResult.knowledge_sources,
+        ]),
+      ];
+    }
+
+    if (workflowResult.report_quality) {
+      const rq = workflowResult.report_quality;
+      incident.reportQuality = {
+        evidenceCompleteness: rq.evidence_completeness ?? rq.evidenceCompleteness,
+        timelineQuality: rq.timeline_quality ?? rq.timelineQuality,
+        threatClassificationConfidence: rq.threat_classification_confidence ?? rq.threatClassificationConfidence,
+        mitigationQuality: rq.mitigation_quality ?? rq.mitigationQuality,
+        reportClarity: rq.report_clarity ?? rq.reportClarity,
+        overallConfidence: rq.overall_confidence ?? rq.overallConfidence,
+        missingEvidence: rq.missing_evidence ?? rq.missingEvidence ?? [],
+        warnings: rq.warnings ?? [],
+      };
+    } else if (reviewAgent?.output?.reportQuality) {
+      incident.reportQuality = reviewAgent.output.reportQuality;
+    }
     incident.recommendations = (workflowResult.recommendations || []).map((r) => ({
       actionType: r.actionType,
       description: r.description,
