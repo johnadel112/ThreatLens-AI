@@ -1,3 +1,5 @@
+import { buildThreatDrivers } from '../../utils/dashboardMetrics';
+
 function levelMeta(score) {
   if (score >= 91) return { label: 'Critical', color: 'text-red-300', bar: 'bg-red-500', glow: 'shadow-glow-critical', badge: 'bg-red-500/15 border-red-500/30' };
   if (score >= 76) return { label: 'High', color: 'text-orange-300', bar: 'bg-orange-500', glow: '', badge: 'bg-orange-500/15 border-orange-500/30' };
@@ -22,7 +24,6 @@ export function computeThreatLevel(stats) {
   const openAlerts = stats.alerts?.openCount || 0;
   const pendingPlaybooks = stats.playbooks?.pendingCount || 0;
 
-  // Fallback for older API responses without openBySeverity
   const criticalIncidents = openCriticalIncidents || openSeverityCount(stats.incidents?.bySeverity, 'critical');
   const highIncidents = openHighIncidents || openSeverityCount(stats.incidents?.bySeverity, 'high');
   const criticalAlerts = openCriticalAlerts || openSeverityCount(stats.alerts?.bySeverity, 'critical');
@@ -39,7 +40,6 @@ export function computeThreatLevel(stats) {
 
   const raw = Math.round(score * 0.72);
 
-  // Reserve 91–100 for truly severe posture: multiple open critical incidents AND alerts
   if (raw >= 91 && (openCriticalIncidents < 2 || openCriticalAlerts < 2)) {
     return Math.min(90, raw);
   }
@@ -47,11 +47,12 @@ export function computeThreatLevel(stats) {
   return Math.min(100, Math.max(0, raw));
 }
 
-export default function ThreatLevelIndicator({ score = 0 }) {
+export default function ThreatLevelIndicator({ score = 0, stats = null, drivers }) {
   const meta = levelMeta(score);
+  const driverList = drivers || buildThreatDrivers(stats);
 
   return (
-    <div className={`glass-panel p-5 ${meta.glow}`}>
+    <div className={`glass-panel p-4 sm:p-5 ${meta.glow}`}>
       <div className="flex items-center justify-between mb-3 gap-2">
         <p className="text-sm text-gray-400">Threat Level</p>
         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap ${meta.badge} ${meta.color}`}>
@@ -59,18 +60,29 @@ export default function ThreatLevelIndicator({ score = 0 }) {
         </span>
       </div>
       <div className="flex items-end gap-2">
-        <span className="text-4xl font-bold text-white leading-none tabular-nums">{score}</span>
+        <span className="text-3xl sm:text-4xl font-bold text-white leading-none tabular-nums">{score}</span>
         <span className="text-sm text-gray-500 mb-1">/ 100</span>
       </div>
-      <div className="mt-4 h-2 rounded-full bg-white/5 overflow-hidden">
+      <div className="mt-4 h-2.5 rounded-full bg-white/5 overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-700 ${meta.bar}`}
           style={{ width: `${score}%` }}
         />
       </div>
-      <p className="text-[11px] text-gray-600 mt-3 leading-relaxed">
-        Based on open incidents, unresolved alerts, and playbook queue.
-      </p>
+
+      {driverList.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-white/[0.06]">
+          <p className="text-[10px] uppercase tracking-wide text-gray-500 mb-2">Drivers</p>
+          <ul className="space-y-1.5">
+            {driverList.map((driver) => (
+              <li key={driver} className="text-xs text-gray-400 flex items-start gap-2">
+                <span className="text-soc-accent mt-0.5">•</span>
+                <span>{driver}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
