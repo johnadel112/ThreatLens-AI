@@ -1,69 +1,85 @@
-# ThreatLens AI
+The goal of the project is to demonstrate how security events can be collected, analyzed, correlated, investigated, and reported in a professional cybersecurity platform.
 
-ThreatLens AI is a security operations dashboard for working with simulated SIEM-style events. It ingests JSON security logs, runs detection rules, groups alerts into cases, and can run an AI-assisted investigation workflow that produces SOC reports.
+Unlike a basic dashboard, ThreatLens AI focuses on the full security operations lifecycle: from event ingestion to incident investigation and final reporting.
 
-All event data is simulated — nothing in this project connects to real production systems.
+Key Features
+User Authentication
+Secure registration and login
+JWT-based authentication
+Role-based access control for Admin and Analyst users
+Live Security Event Generation
+Automatic per-user live JSON security events
+Events include authentication activity, suspicious logins, file downloads, admin actions, API activity, malware-style events, and attack-chain behavior
+Rule-Based Detection Engine
+Brute force detection
+Suspicious login detection
+Data exfiltration detection
+Suspicious admin activity detection
+Port scan / reconnaissance detection
+Privilege escalation detection
+Alerts and Incident Management
+Automatic alert creation from detection rules
+Related alerts grouped into incidents/cases
+Incident timeline, evidence, severity, and status tracking
+AI Agent Investigation Workflow
+Triage Agent
+Investigation Agent
+Threat Classification Agent
+Mitigation Agent
+Report Agent
+Reviewer Agent
+SOAR-Style Playbook Actions
+AI-recommended response actions
+Human approval before execution
+Simulated safe actions such as locking accounts, blocking IPs, forcing password resets, and escalating incidents
+SOC Report Generation
+Professional AI-assisted incident reports
+Timeline, evidence, classification, root-cause analysis, impact assessment, mitigation recommendations, and reviewer notes
+Security Dashboard
+Live monitoring overview
+Events, alerts, incidents, reports, audit logs, and detection rules
+Futuristic cybersecurity UI with live status indicators and visual threat intelligence components
+Tech Stack
+Frontend
+React
+Vite
+Tailwind CSS
+Recharts
+Three.js / React Three Fiber
+Framer Motion
+Backend
+Node.js
+Express.js
+MongoDB
+Mongoose
+JWT Authentication
+Bcrypt password hashing
+AI Service
+Python
+FastAPI
+Multi-agent AI investigation workflow
+LLM-based incident analysis and SOC report generation
+DevOps / Deployment
+Vercel for frontend deployment
+Cloud backend deployment
+MongoDB Atlas
+GitHub version control
+Why This Project Matters
 
-## What's in the repo
+ThreatLens AI was built to demonstrate practical skills across multiple areas of software engineering and cybersecurity:
 
-| Folder | What it does |
-|--------|----------------|
-| `frontend/` | React dashboard (Vite + Tailwind) |
-| `backend/` | Express API, auth, detection engine, cases |
-| `ai-service/` | FastAPI service for multi-agent investigations |
-| `simulator/` | Scripts that send sample event traffic |
+Full-stack application development
+Backend API design
+Authentication and authorization
+Cybersecurity detection logic
+SOC/SIEM workflows
+AI-assisted investigation
+Safe automation and playbook approval
+MongoDB data modeling
+Real-time dashboard design
+Professional UI/UX for security platforms
 
-See [architecture.md](architecture.md) for how the pieces connect.
+The project is designed as a flagship portfolio project that shows the ability to build a realistic, complex, and visually polished security operations platform.
 
-## Run locally
 
-**Requirements:** Node 18+, Python 3.11+, MongoDB
-
-```bash
-cp .env.example .env
-
-# Terminal 1 — backend
-cd backend && npm install && npm run dev
-
-# Terminal 2 — AI service
-cd ai-service && pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-
-# Terminal 3 — frontend
-cd frontend && npm install && npm run dev
-```
-
-| Service | URL |
-|---------|-----|
-| Dashboard | http://localhost:5173 |
-| API | http://localhost:4000/health |
-| AI service | http://localhost:8000/health |
-
-### Docker
-
-```bash
-docker compose up --build -d
-```
-
-Dashboard: http://localhost:3000
-
-## Roles
-
-Three roles are supported:
-
-| Role | Access |
-|------|--------|
-| **Viewer** | Read events, alerts, cases, reports, audit logs |
-| **Analyst** | Everything a viewer can do, plus investigate cases, update alerts, approve SOAR actions |
-| **Admin** | Everything an analyst can do, plus detection rule sync |
-
-You can pick a role when registering. Demo seed users may also exist if you run the backend seed script.
-
-## Health checks
-
-- Backend: `GET /health`
-- AI service: `GET /health` (not `/api/health`)
-
-## License
-
-MIT
+Live Demo:https://threat-lens-ai-bay.vercel.app/login
