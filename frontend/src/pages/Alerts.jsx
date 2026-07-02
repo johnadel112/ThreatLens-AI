@@ -169,6 +169,12 @@ export default function Alerts() {
         </div>
       )}
 
+      {!canUpdate && (
+        <p className="text-xs text-gray-500 mb-4">
+          View-only mode — alert status changes require an analyst or admin account.
+        </p>
+      )}
+
       <div className="space-y-3">
         {loading && alerts.length === 0 ? (
           <TableSkeleton rows={4} />

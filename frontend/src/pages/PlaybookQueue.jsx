@@ -89,6 +89,12 @@ export default function PlaybookQueue() {
         ))}
       </div>
 
+      {!canEdit && (
+        <p className="text-xs text-gray-500 mb-4">
+          View-only mode — approval and execution actions require an analyst or admin account.
+        </p>
+      )}
+
       <GlassCard>
         {loading ? (
           <TableSkeleton rows={4} />

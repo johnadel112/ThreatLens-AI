@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import toast from 'react-hot-toast';
 import * as authApi from '../api/auth';
 import * as liveEventsApi from '../api/liveEvents';
+import { canWriteRole } from '../utils/permissions';
 
 const AuthContext = createContext(null);
 
@@ -115,6 +116,7 @@ export function AuthProvider({ children }) {
       login,
       register,
       logout,
+      canWrite: canWriteRole(user?.role),
       hasRole: (...roles) => roles.includes(user?.role),
     }),
     [user, loading, liveMonitoring, login, register, logout]

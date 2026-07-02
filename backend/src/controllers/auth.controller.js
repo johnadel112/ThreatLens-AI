@@ -14,7 +14,7 @@ export async function register(req, res, next) {
       return res.status(409).json({ error: 'Email already registered', code: 'CONFLICT' });
     }
 
-    const assignedRole = PUBLIC_REGISTER_ROLES.includes(role) ? role : ROLES.ANALYST;
+    const assignedRole = PUBLIC_REGISTER_ROLES.includes(role) ? role : ROLES.VIEWER;
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const user = await User.create({ name, email, passwordHash, role: assignedRole });

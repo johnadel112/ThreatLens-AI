@@ -105,8 +105,9 @@ export default function Register() {
             onChange={(e) => updateField('role', e.target.value)}
             className="input-field"
           >
-            <option value="analyst">Analyst — investigate incidents & approve actions</option>
-            <option value="admin">Admin — full SOC platform access</option>
+            <option value="viewer">Viewer — read-only dashboard access</option>
+            <option value="analyst">Analyst — investigate cases and approve SOAR actions</option>
+            <option value="admin">Admin — full access including detection rule management</option>
           </select>
         </div>
 

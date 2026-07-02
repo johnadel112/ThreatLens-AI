@@ -70,6 +70,12 @@ export default function DetectionRules() {
         </div>
       )}
 
+      {!canEdit && (
+        <p className="text-xs text-gray-500 mb-4">
+          View-only mode — rule tuning requires an analyst or admin account.
+        </p>
+      )}
+
       {loading ? (
         <TableSkeleton rows={6} />
       ) : rules.length === 0 ? (
