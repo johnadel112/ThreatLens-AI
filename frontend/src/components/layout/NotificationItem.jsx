@@ -12,12 +12,12 @@ export default function NotificationItem({
 
   const content = (
     <div
-      className={`flex gap-3 ${compact ? 'px-4 py-3' : 'p-4'} ${
-        !notification.read ? 'bg-soc-accent/[0.04]' : ''
+      className={`flex gap-3 ${compact ? 'px-5 py-4' : 'p-5'} ${
+        !notification.read ? 'bg-gradient-to-r from-soc-accent/[0.06] to-transparent' : ''
       }`}
     >
       <div
-        className={`shrink-0 w-9 h-9 rounded-lg border flex items-center justify-center ${config.bg} ${config.border}`}
+        className={`shrink-0 w-10 h-10 rounded-xl border flex items-center justify-center ${config.bg} ${config.border}`}
       >
         <Icon className={`w-4 h-4 ${config.accent}`} />
       </div>

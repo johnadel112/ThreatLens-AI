@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Bell, X } from 'lucide-react';
@@ -10,12 +10,11 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const buttonRef = useRef(null);
 
   const fetchNotifications = useCallback(async () => {
     try {
       const [listData, countData] = await Promise.all([
-        getNotifications({ limit: 8 }),
+        getNotifications({ limit: 12 }),
         getUnreadCount(),
       ]);
       setNotifications(listData.notifications || []);
@@ -38,11 +37,12 @@ export default function NotificationBell() {
       if (e.key === 'Escape') setOpen(false);
     }
 
+    const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     document.addEventListener('keydown', handleEscape);
 
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = prevOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
   }, [open]);
@@ -57,53 +57,74 @@ export default function NotificationBell() {
     await fetchNotifications();
   }
 
-  const panel = open ? createPortal(
-    <>
+  const drawer = createPortal(
+    <div
+      className={`fixed inset-0 z-[200] transition-opacity duration-200 ${
+        open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+      }`}
+      aria-hidden={!open}
+    >
       <button
         type="button"
         aria-label="Close notifications"
-        className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={() => setOpen(false)}
       />
 
-      <div className="fixed top-14 right-4 sm:right-6 z-[100] w-[min(24rem,calc(100vw-2rem))] rounded-2xl border border-white/10 bg-[#0a0e14] shadow-2xl shadow-black/50 overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08] bg-white/[0.02]">
-          <div className="flex items-center gap-2">
-            <Bell className="w-4 h-4 text-soc-accent" />
-            <p className="text-sm font-semibold text-white">Notifications</p>
+      <aside
+        role="dialog"
+        aria-label="Notifications"
+        className={`absolute top-0 right-0 h-full w-full max-w-md flex flex-col border-l border-white/10 bg-[#080b10] shadow-[-8px_0_40px_rgba(0,0,0,0.55)] transition-transform duration-300 ease-out ${
+          open ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08] bg-gradient-to-r from-soc-accent/10 to-transparent">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-soc-accent/15 border border-soc-accent/25 flex items-center justify-center">
+              <Bell className="w-4 h-4 text-soc-accent" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white">Notifications</p>
+              <p className="text-[11px] text-gray-500">SOC activity feed</p>
+            </div>
             {unreadCount > 0 && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-soc-critical/20 text-red-300 border border-red-500/20">
-                {unreadCount} new
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-soc-critical/20 text-red-300 border border-red-500/25">
+                {unreadCount} unread
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                onClick={handleMarkAllRead}
-                className="text-[11px] text-soc-accent hover:text-soc-accent/80 font-medium"
-              >
-                Mark all read
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="p-1 rounded-md text-gray-500 hover:text-white hover:bg-white/[0.06]"
-              aria-label="Close panel"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.06] transition-colors"
+            aria-label="Close panel"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        <div className="max-h-[min(24rem,60vh)] overflow-y-auto overscroll-contain">
+        {unreadCount > 0 && (
+          <div className="px-5 py-2 border-b border-white/[0.06] bg-white/[0.02]">
+            <button
+              type="button"
+              onClick={handleMarkAllRead}
+              className="text-xs font-medium text-soc-accent hover:text-soc-accent/80"
+            >
+              Mark all as read
+            </button>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto overscroll-contain">
           {notifications.length === 0 ? (
-            <div className="px-4 py-10 text-center">
-              <Bell className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">No notifications yet</p>
-              <p className="text-xs text-gray-600 mt-1">Case and playbook alerts will appear here</p>
+            <div className="flex flex-col items-center justify-center h-full px-6 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-4">
+                <Bell className="w-6 h-6 text-gray-600" />
+              </div>
+              <p className="text-sm font-medium text-gray-400">All caught up</p>
+              <p className="text-xs text-gray-600 mt-1 max-w-[220px]">
+                New cases, playbook approvals, and assignments will show here.
+              </p>
             </div>
           ) : (
             notifications.map((n) => (
@@ -118,24 +139,25 @@ export default function NotificationBell() {
           )}
         </div>
 
-        <Link
-          to="/notifications"
-          onClick={() => setOpen(false)}
-          className="block px-4 py-3 text-center text-xs font-medium text-soc-accent hover:bg-white/[0.04] border-t border-white/[0.08] bg-white/[0.02]"
-        >
-          View all notifications
-        </Link>
-      </div>
-    </>,
+        <div className="p-4 border-t border-white/[0.08] bg-[#06080c]">
+          <Link
+            to="/notifications"
+            onClick={() => setOpen(false)}
+            className="block w-full py-2.5 text-center text-sm font-medium rounded-xl border border-soc-accent/30 text-soc-accent hover:bg-soc-accent/10 transition-colors"
+          >
+            Open notification center
+          </Link>
+        </div>
+      </aside>
+    </div>,
     document.body
-  ) : null;
+  );
 
   return (
     <>
       <button
-        ref={buttonRef}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen(true)}
         className={`relative p-2 rounded-lg transition-colors ${
           open
             ? 'text-soc-accent bg-soc-accent/10'
@@ -146,12 +168,12 @@ export default function NotificationBell() {
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-soc-critical text-[10px] font-bold text-white flex items-center justify-center ring-2 ring-[#0a0e14]">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-soc-critical text-[10px] font-bold text-white flex items-center justify-center ring-2 ring-[#080b10]">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
-      {panel}
+      {drawer}
     </>
   );
 }
