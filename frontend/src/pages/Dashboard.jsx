@@ -20,6 +20,7 @@ import LazyThreatGlobe from '../components/three/LazyThreatGlobe';
 import LiveEventFeed, { EventTicker } from '../components/dashboard/LiveEventFeed';
 import RecentIncidentsPanel from '../components/dashboard/RecentIncidentsPanel';
 import PipelineVisualization from '../components/dashboard/PipelineVisualization';
+import IntelligenceOverview from '../components/dashboard/IntelligenceOverview';
 import {
   EventVolumeHourlyChart,
   EventTimelineChart,
@@ -208,6 +209,13 @@ export default function Dashboard() {
               <RecentIncidentsPanel incidents={recentIncidents} />
             </GlassCard>
 
+            <GlassCard>
+              <h3 className="text-sm font-semibold text-white mb-4">Top Risky Incidents</h3>
+              <IntelligenceOverview incidents={stats?.intelligence?.topRiskyIncidents || []} />
+            </GlassCard>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <GlassCard>
               <h3 className="text-sm font-semibold text-white mb-4">System Health</h3>
               <ServiceStatus backend={backend} ai={ai} />

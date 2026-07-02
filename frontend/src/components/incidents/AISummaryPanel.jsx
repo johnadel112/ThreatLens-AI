@@ -1,3 +1,6 @@
+import MitreTechniqueBadge from '../ui/MitreTechniqueBadge';
+import RiskScoreBadge from '../ui/RiskScoreBadge';
+
 export default function AISummaryPanel({ incident }) {
   if (!incident?.aiSummary && incident?.investigationStatus === 'not_started') {
     return (
@@ -19,17 +22,37 @@ export default function AISummaryPanel({ incident }) {
     );
   }
 
+  const tc = incident.threatClassification || {};
+
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        {incident.riskScore != null && <RiskScoreBadge score={incident.riskScore} size="lg" />}
+        {incident.correlationScore != null && (
+          <span className="text-xs text-gray-500 self-center">
+            Correlation: <span className="text-soc-accent font-mono">{incident.correlationScore}</span>
+          </span>
+        )}
+        {incident.confidenceScore != null && (
+          <span className="text-xs text-gray-500 self-center">
+            Confidence: <span className="text-emerald-300 font-mono">{incident.confidenceScore}%</span>
+          </span>
+        )}
+      </div>
+
       {incident.aiSummary && (
         <p className="text-sm text-gray-300 leading-relaxed">{incident.aiSummary}</p>
       )}
 
-      {incident.threatClassification?.attackType && (
-        <div className="p-3 rounded-lg bg-soc-bg border border-soc-border">
-          <p className="text-xs text-gray-500 mb-1">Threat Classification</p>
-          <p className="text-sm text-white">{incident.threatClassification.attackType}</p>
-          <p className="text-xs text-gray-400 mt-1">{incident.threatClassification.category}</p>
+      {(tc.attackType || incident.mitre?.primaryTactic) && (
+        <div className="p-3 rounded-lg bg-black/20 border border-white/[0.06] space-y-2">
+          <p className="text-xs text-gray-500">Threat Classification</p>
+          {tc.attackType && <p className="text-sm text-white">{tc.attackType}</p>}
+          <MitreTechniqueBadge
+            tactic={tc.mitreTactic || incident.mitre?.primaryTactic}
+            technique={tc.mitreTechnique || incident.mitre?.techniques?.[0]?.technique}
+            techniqueId={tc.techniqueId || incident.mitre?.techniques?.[0]?.techniqueId}
+          />
         </div>
       )}
 
@@ -46,17 +69,6 @@ export default function AISummaryPanel({ incident }) {
             ))}
           </ul>
         </div>
-      )}
-
-      {incident.report?.markdown && (
-        <details className="group">
-          <summary className="text-xs text-soc-accent cursor-pointer hover:underline">
-            View full SOC report
-          </summary>
-          <pre className="mt-3 p-4 rounded-lg bg-soc-bg border border-soc-border text-xs text-gray-400 whitespace-pre-wrap overflow-x-auto max-h-96">
-            {incident.report.markdown}
-          </pre>
-        </details>
       )}
     </div>
   );

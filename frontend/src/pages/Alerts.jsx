@@ -8,6 +8,8 @@ import PageHeader from '../components/ui/PageHeader';
 import EmptyState from '../components/ui/EmptyState';
 import { TableSkeleton } from '../components/ui/LoadingSkeleton';
 import SeverityBadge from '../components/ui/SeverityBadge';
+import RiskScoreBadge from '../components/ui/RiskScoreBadge';
+import MitreTechniqueBadge from '../components/ui/MitreTechniqueBadge';
 import StatusBadge from '../components/ui/StatusBadge';
 
 const SEVERITIES = ['', 'low', 'medium', 'high', 'critical'];
@@ -192,6 +194,10 @@ export default function Alerts() {
                     <h3 className="font-semibold text-white">{alert.title}</h3>
                     <SeverityBadge severity={alert.severity} />
                     <StatusBadge status={alert.status} />
+                    {alert.riskScore != null && <RiskScoreBadge score={alert.riskScore} showLabel={false} />}
+                    {alert.mitre?.techniqueId && (
+                      <MitreTechniqueBadge tactic={alert.mitre.tactic} techniqueId={alert.mitre.techniqueId} compact />
+                    )}
                   </div>
                   <p className="text-sm text-gray-400 mb-2">{alert.evidence?.summary}</p>
                   <div className="flex flex-wrap gap-4 text-xs text-gray-500">

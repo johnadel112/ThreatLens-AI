@@ -7,6 +7,8 @@ import EmptyState from '../components/ui/EmptyState';
 import JsonViewerModal from '../components/ui/JsonViewerModal';
 import { Radio } from 'lucide-react';
 import SeverityBadge from '../components/ui/SeverityBadge';
+import RiskScoreBadge from '../components/ui/RiskScoreBadge';
+import MitreTechniqueBadge from '../components/ui/MitreTechniqueBadge';
 import toast from 'react-hot-toast';
 
 const EVENT_TYPES = [
@@ -168,6 +170,7 @@ export default function Events() {
                 <th>IP</th>
                 <th>Source</th>
                 <th>Severity</th>
+                <th>Risk</th>
                 <th>Metadata</th>
               </tr>
             </thead>
@@ -187,6 +190,13 @@ export default function Events() {
                     <td className="text-gray-400">{event.source}</td>
                     <td>
                       <SeverityBadge severity={event.severity} />
+                    </td>
+                    <td>
+                      {event.riskScore != null ? (
+                        <RiskScoreBadge score={event.riskScore} showLabel={false} />
+                      ) : (
+                        <span className="text-gray-600">—</span>
+                      )}
                     </td>
                     <td>
                       {event.metadata && Object.keys(event.metadata).length > 0 ? (

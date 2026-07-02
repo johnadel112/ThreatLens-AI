@@ -1,5 +1,8 @@
 import GlassCard from '../ui/GlassCard';
 import SeverityBadge from '../ui/SeverityBadge';
+import RiskScoreBadge from '../ui/RiskScoreBadge';
+import MitreTechniqueBadge from '../ui/MitreTechniqueBadge';
+import ThreatIntelCard from '../ui/ThreatIntelCard';
 import { parseSocReportMarkdown } from '../../utils/parseSocReport';
 
 function Section({ title, children, className = '' }) {
@@ -82,6 +85,8 @@ export default function SOCReportViewer({ report }) {
           { label: 'Status', value: report.status || '—' },
           { label: 'Version', value: `v${report.version || metadata.version || 1}` },
           { label: 'Generated', value: report.generatedAt ? new Date(report.generatedAt).toLocaleString() : metadata.generatedAt || '—' },
+          { label: 'Risk Score', value: report.riskScore != null ? `${report.riskScore}/100` : '—' },
+          { label: 'Correlation', value: report.correlationScore != null ? `${report.correlationScore}/100` : '—' },
           { label: 'Classification', value: report.threatClassification?.attackType || '—' },
         ].map((item) => (
           <div key={item.label} className="glass-panel p-4">
@@ -104,9 +109,33 @@ export default function SOCReportViewer({ report }) {
 
       {sections['Threat Classification'] && (
         <Section title="Threat Classification">
-          <BulletList text={sections['Threat Classification']} />
+          <div className="space-y-3">
+            {(report.threatClassification?.mitreTactic || report.mitre?.primaryTactic) && (
+              <MitreTechniqueBadge
+                tactic={report.threatClassification?.mitreTactic || report.mitre?.primaryTactic}
+                technique={report.threatClassification?.mitreTechnique || report.mitre?.techniques?.[0]?.technique}
+                techniqueId={report.threatClassification?.techniqueId || report.mitre?.techniques?.[0]?.techniqueId}
+              />
+            )}
+            <BulletList text={sections['Threat Classification']} />
+          </div>
         </Section>
       )}
+
+      {sections['Correlation Analysis'] && (
+        <Section title="Correlation Analysis">
+          <BulletList text={sections['Correlation Analysis']} />
+        </Section>
+      )}
+
+      {sections['Threat Intelligence'] && (
+        <GlassCard>
+          <h3 className="text-sm font-semibold text-white uppercase tracking-wide mb-4">Threat Intelligence</h3>
+          <BulletList text={sections['Threat Intelligence']} />
+        </GlassCard>
+      )}
+
+      {report.threatIntel?.ip && <ThreatIntelCard intel={report.threatIntel} />}
 
       {sections['AI Triage Summary'] && <Section title="AI Triage Summary">{sections['AI Triage Summary']}</Section>}
       {sections['Investigation Summary'] && <Section title="Investigation Summary">{sections['Investigation Summary']}</Section>}

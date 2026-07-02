@@ -13,6 +13,10 @@ import PlaybookPanel from '../components/incidents/PlaybookPanel';
 import SeverityBadge from '../components/ui/SeverityBadge';
 import StatusBadge from '../components/ui/StatusBadge';
 import SOCReportViewer from '../components/reports/SOCReportViewer';
+import CorrelationPanel from '../components/incidents/CorrelationPanel';
+import ThreatIntelCard from '../components/ui/ThreatIntelCard';
+import RiskScoreBadge from '../components/ui/RiskScoreBadge';
+import MitreTechniqueBadge from '../components/ui/MitreTechniqueBadge';
 import EmptyState from '../components/ui/EmptyState';
 import { TableSkeleton } from '../components/ui/LoadingSkeleton';
 import { FileText, Loader2 } from 'lucide-react';
@@ -21,6 +25,7 @@ import { downloadMarkdownReport, printReport } from '../utils/reportExport';
 const INCIDENT_STATUSES = ['new', 'investigating', 'contained', 'resolved', 'closed'];
 const TABS = [
   { id: 'overview', label: 'Overview' },
+  { id: 'correlation', label: 'Correlation' },
   { id: 'timeline', label: 'Timeline' },
   { id: 'evidence', label: 'Evidence' },
   { id: 'ai', label: 'AI Investigation' },
@@ -235,6 +240,10 @@ export default function IncidentDetail() {
           <div className="flex flex-wrap items-center gap-2 mb-2">
             <h2 className="text-2xl font-bold text-white">{incident.title}</h2>
             <SeverityBadge severity={incident.severity} />
+            {incident.riskScore != null && <RiskScoreBadge score={incident.riskScore} />}
+            {incident.mitre?.primaryTactic && (
+              <MitreTechniqueBadge tactic={incident.mitre.primaryTactic} compact />
+            )}
             <span className="inline-flex px-2 py-0.5 rounded-md text-xs font-medium border capitalize bg-soc-surface border-soc-border text-gray-300">
               {incident.status}
             </span>
@@ -324,6 +333,9 @@ export default function IncidentDetail() {
             <h3 className="text-sm font-semibold text-white mb-4">AI Investigation Summary</h3>
             <AISummaryPanel incident={incident} />
           </GlassCard>
+          {incident.threatIntel?.ip && (
+            <ThreatIntelCard intel={incident.threatIntel} />
+          )}
           <GlassCard>
             <h3 className="text-sm font-semibold text-white mb-4">Related Alerts ({incident.alerts?.length || 0})</h3>
             <div className="space-y-3">
@@ -333,6 +345,10 @@ export default function IncidentDetail() {
                     <span className="text-sm text-white font-medium">{alert.title}</span>
                     <SeverityBadge severity={alert.severity} />
                     <StatusBadge status={alert.status} />
+                    {alert.riskScore != null && <RiskScoreBadge score={alert.riskScore} showLabel={false} />}
+                    {alert.mitre?.techniqueId && (
+                      <MitreTechniqueBadge tactic={alert.mitre.tactic} techniqueId={alert.mitre.techniqueId} compact />
+                    )}
                   </div>
                   <p className="text-xs text-gray-500 mt-2">{alert.evidence?.summary}</p>
                 </div>
@@ -345,10 +361,28 @@ export default function IncidentDetail() {
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between"><dt className="text-gray-500">Events</dt><dd className="text-white">{incident.events?.length || 0}</dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">Alerts</dt><dd className="text-white">{incident.alerts?.length || 0}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">Correlation</dt><dd className="text-soc-accent font-mono">{incident.correlationScore ?? '—'}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">Confidence</dt><dd className="text-emerald-300 font-mono">{incident.confidenceScore != null ? `${incident.confidenceScore}%` : '—'}</dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">Investigation</dt><dd className="text-soc-accent capitalize">{incident.investigationStatus?.replace(/_/g, ' ') || 'not started'}</dd></div>
           </dl>
         </GlassCard>
       </div>
+      )}
+
+      {activeTab === 'correlation' && (
+        <GlassCard>
+          <h3 className="text-sm font-semibold text-white mb-4">Correlation Analysis</h3>
+          <CorrelationPanel
+            correlation={incident.correlation}
+            correlationScore={incident.correlationScore}
+            mitre={incident.mitre}
+          />
+          {incident.threatIntel?.ip && (
+            <div className="mt-6">
+              <ThreatIntelCard intel={incident.threatIntel} />
+            </div>
+          )}
+        </GlassCard>
       )}
 
       {activeTab === 'timeline' && (

@@ -7,6 +7,8 @@ import PageHeader from '../components/ui/PageHeader';
 import EmptyState from '../components/ui/EmptyState';
 import { TableSkeleton } from '../components/ui/LoadingSkeleton';
 import SeverityBadge from '../components/ui/SeverityBadge';
+import RiskScoreBadge from '../components/ui/RiskScoreBadge';
+import MitreTechniqueBadge from '../components/ui/MitreTechniqueBadge';
 
 const SEVERITIES = ['', 'low', 'medium', 'high', 'critical'];
 const STATUSES = ['', 'new', 'investigating', 'contained', 'resolved', 'closed'];
@@ -143,6 +145,10 @@ export default function Incidents() {
                 <h3 className="font-semibold text-white leading-snug">{incident.title}</h3>
                 <SeverityBadge severity={incident.severity} />
                 <IncidentStatusBadge status={incident.status} />
+                {incident.riskScore != null && <RiskScoreBadge score={incident.riskScore} showLabel={false} />}
+                {incident.mitre?.primaryTactic && (
+                  <MitreTechniqueBadge tactic={incident.mitre.primaryTactic} compact />
+                )}
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mb-3">
                 {incident.username && <span>User: {incident.username}</span>}
@@ -154,6 +160,9 @@ export default function Incidents() {
                 <span className="capitalize">
                   AI: {incident.investigationStatus?.replace(/_/g, ' ') || 'not started'}
                 </span>
+                {incident.correlationScore != null && (
+                  <span>Correlation: {incident.correlationScore}</span>
+                )}
                 <span>Created {formatTime(incident.createdAt)}</span>
                 {incident.updatedAt && <span>Updated {formatTime(incident.updatedAt)}</span>}
               </div>
