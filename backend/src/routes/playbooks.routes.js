@@ -11,48 +11,53 @@ import {
   runTemplate,
 } from '../controllers/playbooks.controller.js';
 import { authenticate } from '../middleware/auth.js';
-import { authorize } from '../middleware/rbac.js';
-import { ROLES } from '../config/constants.js';
+import { requirePermission } from '../middleware/rbac.js';
+import { PERMISSIONS } from '../config/permissions.js';
 
 const router = Router();
 
-router.get('/audit', authenticate, getAuditLog);
-router.get('/templates', authenticate, listTemplates);
-router.get('/', authenticate, listPlaybooks);
-router.get('/:actionId', authenticate, getPlaybook);
+router.get(
+  '/audit',
+  authenticate,
+  requirePermission(PERMISSIONS.AUDIT_LOGS_READ),
+  getAuditLog
+);
+router.get('/templates', authenticate, requirePermission(PERMISSIONS.PLAYBOOKS_READ), listTemplates);
+router.get('/', authenticate, requirePermission(PERMISSIONS.PLAYBOOKS_READ), listPlaybooks);
+router.get('/:actionId', authenticate, requirePermission(PERMISSIONS.PLAYBOOKS_READ), getPlaybook);
 
 router.post(
   '/manual',
   authenticate,
-  authorize(ROLES.ADMIN, ROLES.ANALYST),
+  requirePermission(PERMISSIONS.PLAYBOOKS_REQUEST),
   createManualAction
 );
 
 router.post(
   '/run-template',
   authenticate,
-  authorize(ROLES.ADMIN, ROLES.ANALYST),
+  requirePermission(PERMISSIONS.PLAYBOOKS_REQUEST),
   runTemplate
 );
 
 router.post(
   '/:actionId/approve',
   authenticate,
-  authorize(ROLES.ADMIN, ROLES.ANALYST),
+  requirePermission(PERMISSIONS.PLAYBOOKS_APPROVE),
   approvePlaybook
 );
 
 router.post(
   '/:actionId/reject',
   authenticate,
-  authorize(ROLES.ADMIN, ROLES.ANALYST),
+  requirePermission(PERMISSIONS.PLAYBOOKS_REJECT),
   rejectPlaybook
 );
 
 router.post(
   '/:actionId/execute',
   authenticate,
-  authorize(ROLES.ADMIN, ROLES.ANALYST),
+  requirePermission(PERMISSIONS.PLAYBOOKS_EXECUTE),
   executePlaybook
 );
 

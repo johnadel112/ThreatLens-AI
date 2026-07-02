@@ -13,21 +13,28 @@ import {
   updateIncidentTask,
 } from '../controllers/incidents.controller.js';
 import { authenticate } from '../middleware/auth.js';
-import { authorize } from '../middleware/rbac.js';
-import { ROLES } from '../config/constants.js';
+import { requirePermission } from '../middleware/rbac.js';
+import { PERMISSIONS } from '../config/permissions.js';
 import { validate } from '../middleware/validate.js';
 import { listIncidentsValidator, updateIncidentValidator, addNoteValidator, addTaskValidator, updateTaskValidator } from '../validators/incident.validator.js';
 
 const router = Router();
 
-router.get('/', authenticate, listIncidentsValidator, validate, listIncidents);
-router.get('/stats', authenticate, getIncidentStats);
-router.get('/:id/agents', authenticate, getIncidentAgentOutputs);
-router.get('/:id', authenticate, getIncident);
+router.get(
+  '/',
+  authenticate,
+  requirePermission(PERMISSIONS.CASES_READ),
+  listIncidentsValidator,
+  validate,
+  listIncidents
+);
+router.get('/stats', authenticate, requirePermission(PERMISSIONS.CASES_READ), getIncidentStats);
+router.get('/:id/agents', authenticate, requirePermission(PERMISSIONS.CASES_READ), getIncidentAgentOutputs);
+router.get('/:id', authenticate, requirePermission(PERMISSIONS.CASES_READ), getIncident);
 router.patch(
   '/:id',
   authenticate,
-  authorize(ROLES.ADMIN, ROLES.ANALYST),
+  requirePermission(PERMISSIONS.CASES_UPDATE),
   updateIncidentValidator,
   validate,
   updateIncident
@@ -35,25 +42,25 @@ router.patch(
 router.post(
   '/:id/investigate',
   authenticate,
-  authorize(ROLES.ADMIN, ROLES.ANALYST),
+  requirePermission(PERMISSIONS.AI_INVESTIGATE),
   investigateIncident
 );
 router.post(
   '/:id/report',
   authenticate,
-  authorize(ROLES.ADMIN, ROLES.ANALYST),
+  requirePermission(PERMISSIONS.REPORTS_GENERATE),
   generateIncidentReport
 );
 router.post(
   '/:id/refresh-timeline',
   authenticate,
-  authorize(ROLES.ADMIN, ROLES.ANALYST),
+  requirePermission(PERMISSIONS.CASES_UPDATE),
   refreshTimeline
 );
 router.post(
   '/:id/notes',
   authenticate,
-  authorize(ROLES.ADMIN, ROLES.ANALYST),
+  requirePermission(PERMISSIONS.CASES_UPDATE),
   addNoteValidator,
   validate,
   addIncidentNote
@@ -61,7 +68,7 @@ router.post(
 router.post(
   '/:id/tasks',
   authenticate,
-  authorize(ROLES.ADMIN, ROLES.ANALYST),
+  requirePermission(PERMISSIONS.CASES_UPDATE),
   addTaskValidator,
   validate,
   addIncidentTask
@@ -69,7 +76,7 @@ router.post(
 router.patch(
   '/:id/tasks/:taskId',
   authenticate,
-  authorize(ROLES.ADMIN, ROLES.ANALYST),
+  requirePermission(PERMISSIONS.CASES_UPDATE),
   updateTaskValidator,
   validate,
   updateIncidentTask

@@ -14,6 +14,9 @@ export async function register(req, res, next) {
       return res.status(409).json({ error: 'Email already registered', code: 'CONFLICT' });
     }
 
+    // Demo mode: users may self-select admin at registration.
+    // TODO(production): restrict PUBLIC_REGISTER_ROLES to viewer/analyst and assign
+    // admin via first-user bootstrap, invitation, or admin approval workflow.
     const assignedRole = PUBLIC_REGISTER_ROLES.includes(role) ? role : ROLES.VIEWER;
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);

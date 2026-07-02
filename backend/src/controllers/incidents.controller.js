@@ -1,6 +1,6 @@
 import Incident from '../models/Incident.js';
 import User from '../models/User.js';
-import { INCIDENT_STATUSES } from '../config/constants.js';
+import { INCIDENT_STATUSES, ROLES } from '../config/constants.js';
 import { rebuildIncidentTimeline } from '../services/incident/timelineBuilder.js';
 import {
   loadIncidentBundle,
@@ -143,8 +143,24 @@ export async function updateIncident(req, res, next) {
 
     if (assignedAnalystId !== undefined) {
       if (assignedAnalystId === null || assignedAnalystId === '') {
+        if (req.user.role === ROLES.ANALYST) {
+          return res.status(403).json({
+            error: 'Forbidden: analysts cannot unassign cases from other analysts.',
+            code: 'FORBIDDEN',
+          });
+        }
         incident.assignedAnalyst = undefined;
       } else {
+        if (
+          req.user.role === ROLES.ANALYST &&
+          assignedAnalystId.toString() !== req.user._id.toString()
+        ) {
+          return res.status(403).json({
+            error: 'Forbidden: analysts can only assign cases to themselves.',
+            code: 'FORBIDDEN',
+          });
+        }
+
         const analyst = await User.findById(assignedAnalystId);
         if (!analyst) {
           return res.status(404).json({ error: 'Analyst not found', code: 'NOT_FOUND' });
