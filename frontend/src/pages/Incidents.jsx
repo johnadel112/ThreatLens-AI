@@ -78,8 +78,8 @@ export default function Incidents() {
   return (
     <div>
       <PageHeader
-        title="Investigation Cases"
-        subtitle="Correlated alerts grouped into analyst investigation cases"
+        title="Cases"
+        subtitle="Grouped security incidents requiring investigation"
         actions={
           <button type="button" onClick={fetchIncidents} className="btn-ghost text-sm py-2">
             Refresh
@@ -130,8 +130,8 @@ export default function Incidents() {
       ) : incidents.length === 0 ? (
         <EmptyState
           icon={FolderKanban}
-          title="No incidents yet"
-          description="Incidents appear when related alerts are grouped from your live event stream."
+          title="No cases yet"
+          description="Cases appear when related alerts are grouped from your live event stream."
         />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -183,7 +183,7 @@ export default function Incidents() {
       {!loading && pagination.total > 0 && (
         <div className="mt-4 flex items-center justify-between">
           <p className="text-xs text-gray-500">
-            {pagination.total} incident{pagination.total !== 1 ? 's' : ''} total
+            {pagination.total} case{pagination.total !== 1 ? 's' : ''} total
           </p>
           <div className="flex gap-2">
             <button

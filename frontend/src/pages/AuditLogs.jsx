@@ -83,7 +83,29 @@ export default function AuditLogs() {
         ) : logs.length === 0 ? (
           <EmptyState icon={ScrollText} title="No audit entries" description="Actions across incidents, playbooks, and rules will appear here." />
         ) : (
-          <div className="overflow-x-auto">
+        <>
+          <div className="md:hidden space-y-3 p-4">
+            {logs.map((log) => (
+              <div key={log.id} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-medium text-soc-accent">{ACTION_LABELS[log.action] || log.action}</p>
+                  <p className="text-[10px] text-gray-500 font-mono shrink-0">{new Date(log.createdAt).toLocaleString()}</p>
+                </div>
+                <p className="text-xs text-gray-300">{log.userName || log.userEmail || '—'}</p>
+                <p className="text-xs text-gray-500 capitalize">{log.entityType?.replace(/_/g, ' ')}</p>
+                <p className="text-xs text-gray-400">
+                  {log.incidentId && (
+                    <Link to={`/incidents/${log.incidentId}`} className="text-soc-accent hover:underline mr-2">
+                      View case
+                    </Link>
+                  )}
+                  {log.details?.caseNumber && <span>#{log.details.caseNumber} </span>}
+                  {log.details?.preview || log.details?.title || log.details?.actionType || '—'}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="hidden md:block overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
@@ -117,6 +139,7 @@ export default function AuditLogs() {
               </tbody>
             </table>
           </div>
+        </>
         )}
       </GlassCard>
     </div>

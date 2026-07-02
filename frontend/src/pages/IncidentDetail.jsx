@@ -244,7 +244,7 @@ export default function IncidentDetail() {
       <div>
         <p className="text-red-300">{error}</p>
         <Link to="/incidents" className="text-soc-accent text-sm mt-2 inline-block hover:underline">
-          ← Back to incidents
+          ← Back to cases
         </Link>
       </div>
     );
@@ -253,7 +253,7 @@ export default function IncidentDetail() {
   return (
     <div>
       <Link to="/incidents" className="text-sm text-soc-accent hover:underline mb-4 inline-block">
-        ← Back to incidents
+        ← Back to cases
       </Link>
 
       <div className="mb-6 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
@@ -427,7 +427,7 @@ export default function IncidentDetail() {
 
       {activeTab === 'timeline' && (
         <GlassCard>
-          <h3 className="text-sm font-semibold text-white mb-4">Incident Timeline</h3>
+          <h3 className="text-sm font-semibold text-white mb-4">Case Timeline</h3>
           <Timeline entries={incident.timeline} />
         </GlassCard>
       )}

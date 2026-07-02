@@ -159,7 +159,49 @@ export default function Events() {
           description="Live monitoring will populate this feed automatically. Events appear within seconds of login."
         />
       ) : (
-      <div className="glass-panel overflow-hidden p-0">
+      <>
+      <div className="md:hidden space-y-3">
+        {events.map((event) => (
+          <div key={event.id} className="glass-panel p-4 space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-gray-500">Event Type</p>
+                <code className="text-sm text-soc-accent font-mono">{event.eventType}</code>
+              </div>
+              <SeverityBadge severity={event.severity} />
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-[10px] text-gray-500">IP</p>
+                <p className="text-gray-300 font-mono text-xs">{event.ip || '—'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-500">Source</p>
+                <p className="text-gray-300 text-xs">{event.source || '—'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-500">User</p>
+                <p className="text-gray-300 text-xs">{event.username || '—'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-500">Time</p>
+                <p className="text-gray-400 text-xs">{formatTimestamp(event.timestamp)}</p>
+              </div>
+            </div>
+            {event.metadata && Object.keys(event.metadata).length > 0 && (
+              <button
+                type="button"
+                onClick={() => setJsonModal({ title: `${event.eventType} metadata`, data: event.metadata })}
+                className="btn-ghost w-full text-sm py-2.5 min-h-[44px]"
+              >
+                View JSON
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden md:block glass-panel overflow-hidden p-0">
         <div className="overflow-x-auto">
           <table className="data-table">
             <thead>
@@ -216,37 +258,38 @@ export default function Events() {
             </tbody>
           </table>
         </div>
-
-        {!loading && pagination.total > 0 && (
-          <div className="px-5 py-3 border-t border-white/[0.06] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <p className="text-xs text-gray-500">
-              Showing {(pagination.page - 1) * pagination.limit + 1}–
-              {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
-                className="px-3 py-1 rounded text-xs border border-soc-border text-gray-400 disabled:opacity-40 hover:text-white hover:border-soc-accent/50"
-              >
-                Previous
-              </button>
-              <span className="px-3 py-1 text-xs text-gray-500">
-                Page {pagination.page} of {pagination.pages}
-              </span>
-              <button
-                type="button"
-                disabled={page >= pagination.pages}
-                onClick={() => setPage((p) => p + 1)}
-                className="px-3 py-1 rounded text-xs border border-soc-border text-gray-400 disabled:opacity-40 hover:text-white hover:border-soc-accent/50"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
       </div>
+
+      {!loading && pagination.total > 0 && (
+        <div className="px-4 md:px-5 py-3 border-t border-white/[0.06] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 glass-panel md:border-t-0 md:rounded-none md:mt-0 mt-3 rounded-xl">
+          <p className="text-xs text-gray-500">
+            Showing {(pagination.page - 1) * pagination.limit + 1}–
+            {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+              className="px-3 py-2 min-h-[44px] rounded text-xs border border-soc-border text-gray-400 disabled:opacity-40 hover:text-white hover:border-soc-accent/50"
+            >
+              Previous
+            </button>
+            <span className="px-3 py-2 text-xs text-gray-500 flex items-center">
+              Page {pagination.page} of {pagination.pages}
+            </span>
+            <button
+              type="button"
+              disabled={page >= pagination.pages}
+              onClick={() => setPage((p) => p + 1)}
+              className="px-3 py-2 min-h-[44px] rounded text-xs border border-soc-border text-gray-400 disabled:opacity-40 hover:text-white hover:border-soc-accent/50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+      </>
       )}
 
       <JsonViewerModal
