@@ -4,9 +4,12 @@ import { Link } from 'react-router-dom';
 import { Bell, X } from 'lucide-react';
 import { getNotifications, getUnreadCount, markAllNotificationsRead, markNotificationRead } from '../../api/notifications';
 import { usePolling } from '../../hooks/usePolling';
+import { useIsMobile } from '../../hooks/useIsMobile';
+
 import NotificationItem from './NotificationItem';
 
 export default function NotificationBell() {
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -74,8 +77,10 @@ export default function NotificationBell() {
       <aside
         role="dialog"
         aria-label="Notifications"
-        className={`absolute top-0 right-0 h-full w-full max-w-md flex flex-col border-l border-white/10 bg-[#080b10] shadow-[-8px_0_40px_rgba(0,0,0,0.55)] transition-transform duration-300 ease-out ${
-          open ? 'translate-x-0' : 'translate-x-full'
+        className={`absolute bg-[#080b10] shadow-2xl shadow-black/50 overflow-hidden transition-transform duration-300 ease-out ${
+          isMobile
+            ? `bottom-0 inset-x-0 rounded-t-2xl border-t border-white/10 max-h-[85vh] flex flex-col ${open ? 'translate-y-0' : 'translate-y-full'}`
+            : `top-0 right-0 h-full w-full max-w-md border-l border-white/10 flex flex-col ${open ? 'translate-x-0' : 'translate-x-full'}`
         }`}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08] bg-gradient-to-r from-soc-accent/10 to-transparent">
