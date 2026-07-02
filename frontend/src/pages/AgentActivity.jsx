@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getIncident, getAgentOutputs, investigateIncident } from '../api/incidents';
 import { useAuth } from '../context/AuthContext';
+import { PERMISSIONS } from '../utils/permissions';
 import { usePolling } from '../hooks/usePolling';
 import AgentWorkflow from '../components/agents/AgentWorkflow';
 import GlassCard from '../components/ui/GlassCard';
@@ -10,8 +11,8 @@ import SeverityBadge from '../components/ui/SeverityBadge';
 
 export default function AgentActivity() {
   const { id } = useParams();
-  const { hasRole } = useAuth();
-  const canInvestigate = hasRole('admin', 'analyst');
+  const { can } = useAuth();
+  const canInvestigate = can(PERMISSIONS.AI_INVESTIGATE);
 
   const [incident, setIncident] = useState(null);
   const [agentOutputs, setAgentOutputs] = useState([]);

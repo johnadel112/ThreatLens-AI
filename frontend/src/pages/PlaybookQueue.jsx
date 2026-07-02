@@ -13,11 +13,12 @@ import PageHeader from '../components/ui/PageHeader';
 import GlassCard from '../components/ui/GlassCard';
 import EmptyState from '../components/ui/EmptyState';
 import { TableSkeleton } from '../components/ui/LoadingSkeleton';
-import PlaybookPanel from '../components/incidents/PlaybookPanel';
+import { PERMISSIONS } from '../utils/permissions';
 
 export default function PlaybookQueue() {
-  const { hasRole } = useAuth();
-  const canEdit = hasRole('admin', 'analyst');
+  const { can } = useAuth();
+  const canApprove = can(PERMISSIONS.PLAYBOOKS_APPROVE);
+  const canExecute = can(PERMISSIONS.PLAYBOOKS_EXECUTE);
   const [actions, setActions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('pending');
@@ -89,9 +90,9 @@ export default function PlaybookQueue() {
         ))}
       </div>
 
-      {!canEdit && (
-        <p className="text-xs text-gray-500 mb-4">
-          View-only mode — approval and execution actions require an analyst or admin account.
+      {!canApprove && (
+        <p className="text-xs text-amber-300/90 mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+          SOAR approvals and execution require an admin account. Analysts can view recommended actions and request playbooks from case pages.
         </p>
       )}
 
@@ -120,13 +121,18 @@ export default function PlaybookQueue() {
                   </Link>
                 </div>
                 <p className="text-sm text-gray-400 mb-3">{action.description}</p>
-                {canEdit && action.status === 'pending' && (
+                {action.status === 'pending' && (
+                  <span className="text-[10px] text-amber-300/80 border border-amber-500/20 px-2 py-0.5 rounded">
+                    Requires admin approval
+                  </span>
+                )}
+                {canApprove && action.status === 'pending' && (
                   <div className="flex gap-2">
                     <button type="button" onClick={() => handleApprove(action.id)} className="btn-primary text-xs py-1.5">Approve</button>
                     <button type="button" onClick={() => handleReject(action.id)} className="btn-ghost text-xs py-1.5">Reject</button>
                   </div>
                 )}
-                {canEdit && action.status === 'approved' && (
+                {canExecute && action.status === 'approved' && (
                   <button type="button" onClick={() => handleExecute(action.id)} className="btn-primary text-xs py-1.5">Execute</button>
                 )}
               </div>

@@ -23,6 +23,8 @@ const ACTION_LABELS = {
   rule_enabled: 'Rule Enabled',
   rule_disabled: 'Rule Disabled',
   rule_updated: 'Rule Updated',
+  forbidden_action_attempt: 'Forbidden Action Attempt',
+  user_role_changed: 'User Role Changed',
 };
 
 export default function AuditLogs() {

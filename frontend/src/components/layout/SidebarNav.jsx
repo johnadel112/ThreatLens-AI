@@ -3,40 +3,51 @@ import {
   LayoutDashboard, Radio, Bell, FolderKanban, FileText, Shield,
   ScrollText, ShieldAlert, Workflow,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { PERMISSIONS } from '../../utils/permissions';
 
 export const navSections = [
   {
     title: 'Overview',
-    items: [{ to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true }],
+    items: [{ to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true, permission: PERMISSIONS.DASHBOARD_READ }],
   },
   {
     title: 'Monitoring',
     items: [
-      { to: '/events', label: 'Events', icon: Radio },
-      { to: '/alerts', label: 'Alerts', icon: Bell },
-      { to: '/incidents', label: 'Cases', icon: FolderKanban },
+      { to: '/events', label: 'Events', icon: Radio, permission: PERMISSIONS.EVENTS_READ },
+      { to: '/alerts', label: 'Alerts', icon: Bell, permission: PERMISSIONS.ALERTS_READ },
+      { to: '/incidents', label: 'Cases', icon: FolderKanban, permission: PERMISSIONS.CASES_READ },
     ],
   },
   {
     title: 'Automation',
     items: [
-      { to: '/playbooks', label: 'SOAR Queue', icon: Workflow },
-      { to: '/rules', label: 'Detection Rules', icon: ShieldAlert },
+      { to: '/playbooks', label: 'SOAR Queue', icon: Workflow, permission: PERMISSIONS.PLAYBOOKS_READ },
+      { to: '/rules', label: 'Detection Rules', icon: ShieldAlert, permission: PERMISSIONS.DETECTION_RULES_READ },
     ],
   },
   {
     title: 'Governance',
     items: [
-      { to: '/audit', label: 'Audit Logs', icon: ScrollText },
-      { to: '/reports', label: 'Reports', icon: FileText },
+      { to: '/audit', label: 'Audit Logs', icon: ScrollText, permission: PERMISSIONS.AUDIT_LOGS_READ },
+      { to: '/reports', label: 'Reports', icon: FileText, permission: PERMISSIONS.REPORTS_READ },
     ],
   },
 ];
 
 export default function SidebarNav({ onNavigate, className = '' }) {
+  const { can } = useAuth();
+
+  const visibleSections = navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => !item.permission || can(item.permission)),
+    }))
+    .filter((section) => section.items.length > 0);
+
   return (
     <nav className={`space-y-5 ${className}`}>
-      {navSections.map((section) => (
+      {visibleSections.map((section) => (
         <div key={section.title}>
           <p className="px-3 mb-2 text-[10px] uppercase tracking-widest text-gray-600 font-medium">
             {section.title}

@@ -8,11 +8,12 @@ import GlassCard from '../components/ui/GlassCard';
 import SeverityBadge from '../components/ui/SeverityBadge';
 import EmptyState from '../components/ui/EmptyState';
 import { TableSkeleton } from '../components/ui/LoadingSkeleton';
+import { PERMISSIONS } from '../utils/permissions';
 import MitreTechniqueBadge from '../components/ui/MitreTechniqueBadge';
 
 export default function DetectionRules() {
-  const { hasRole } = useAuth();
-  const canEdit = hasRole('admin', 'analyst');
+  const { can } = useAuth();
+  const canManageRules = can(PERMISSIONS.DETECTION_RULES_MANAGE);
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -70,9 +71,9 @@ export default function DetectionRules() {
         </div>
       )}
 
-      {!canEdit && (
+      {!canManageRules && (
         <p className="text-xs text-gray-500 mb-4">
-          View-only mode — rule tuning requires an analyst or admin account.
+          Read-only — detection rule management requires an admin account.
         </p>
       )}
 
@@ -103,7 +104,7 @@ export default function DetectionRules() {
                   </p>
                 </div>
 
-                {canEdit && (
+                {canManageRules && (
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                     <label className="text-xs text-gray-500 flex items-center gap-2">
                       Threshold

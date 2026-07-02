@@ -24,7 +24,7 @@ import CaseTasksPanel from '../components/incidents/CaseTasksPanel';
 import EmptyState from '../components/ui/EmptyState';
 import { TableSkeleton } from '../components/ui/LoadingSkeleton';
 import { FileText, Loader2 } from 'lucide-react';
-import { downloadMarkdownReport, printReport } from '../utils/reportExport';
+import { PERMISSIONS } from '../utils/permissions';
 
 const INCIDENT_STATUSES = ['new', 'investigating', 'contained', 'resolved', 'closed'];
 const TABS = [
@@ -41,8 +41,12 @@ const TABS = [
 export default function IncidentDetail() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
-  const { user, hasRole } = useAuth();
-  const canEdit = hasRole('admin', 'analyst');
+  const { user, can } = useAuth();
+  const canUpdateCase = can(PERMISSIONS.CASES_UPDATE);
+  const canInvestigate = can(PERMISSIONS.AI_INVESTIGATE);
+  const canGenerateReport = can(PERMISSIONS.REPORTS_GENERATE);
+  const canApprovePlaybooks = can(PERMISSIONS.PLAYBOOKS_APPROVE);
+  const canRequestPlaybooks = can(PERMISSIONS.PLAYBOOKS_REQUEST);
 
   const [incident, setIncident] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -287,33 +291,39 @@ export default function IncidentDetail() {
           </div>
         </div>
 
-        {canEdit && (
+        {(canUpdateCase || canInvestigate || canGenerateReport) && (
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={handleAssignToMe}
-              className="px-3 py-2 rounded-lg text-xs border border-soc-border text-gray-300 hover:text-white"
-            >
-              Assign to me
-            </button>
-            <button
-              type="button"
-              onClick={handleInvestigate}
-              disabled={investigating}
-              className="btn-primary text-xs py-2"
-            >
-              {investigating ? 'Investigating…' : 'Investigate with AI'}
-            </button>
-            <button
-              type="button"
-              onClick={handleGenerateReport}
-              disabled={generatingReport || incident.investigationStatus !== 'completed'}
-              className="btn-ghost text-xs py-2"
-              title={incident.investigationStatus !== 'completed' ? 'Complete AI investigation first' : ''}
-            >
-              {generatingReport ? 'Generating…' : 'Generate SOC Report'}
-            </button>
-            {INCIDENT_STATUSES.filter((s) => s !== incident.status).slice(0, 2).map((status) => (
+            {canUpdateCase && (
+              <button
+                type="button"
+                onClick={handleAssignToMe}
+                className="px-3 py-2 rounded-lg text-xs border border-soc-border text-gray-300 hover:text-white"
+              >
+                Assign to me
+              </button>
+            )}
+            {canInvestigate && (
+              <button
+                type="button"
+                onClick={handleInvestigate}
+                disabled={investigating}
+                className="btn-primary text-xs py-2"
+              >
+                {investigating ? 'Investigating…' : 'Investigate with AI'}
+              </button>
+            )}
+            {canGenerateReport && (
+              <button
+                type="button"
+                onClick={handleGenerateReport}
+                disabled={generatingReport || incident.investigationStatus !== 'completed'}
+                className="btn-ghost text-xs py-2"
+                title={incident.investigationStatus !== 'completed' ? 'Complete AI investigation first' : ''}
+              >
+                {generatingReport ? 'Generating…' : 'Generate SOC Report'}
+              </button>
+            )}
+            {canUpdateCase && INCIDENT_STATUSES.filter((s) => s !== incident.status).slice(0, 2).map((status) => (
               <button
                 key={status}
                 type="button"
@@ -361,7 +371,7 @@ export default function IncidentDetail() {
         <div className="xl:col-span-2 space-y-6">
           <GlassCard>
             <h3 className="text-sm font-semibold text-white mb-4">AI Investigation Summary</h3>
-            <AISummaryPanel incident={incident} onRetry={canEdit ? handleInvestigate : undefined} />
+            <AISummaryPanel incident={incident} onRetry={canInvestigate ? handleInvestigate : undefined} />
           </GlassCard>
           <GlassCard>
             <h3 className="text-sm font-semibold text-white mb-4">Explainable AI Evidence</h3>
@@ -462,7 +472,7 @@ export default function IncidentDetail() {
             <h3 className="text-sm font-semibold text-white mb-4">Analyst Notes</h3>
             <CaseNotesPanel
               incident={incident}
-              canEdit={canEdit}
+              canEdit={canUpdateCase}
               onUpdated={(updated) => setIncident((prev) => ({ ...prev, ...updated, alerts: prev.alerts, events: prev.events, agentOutputs: prev.agentOutputs }))}
             />
           </GlassCard>
@@ -470,7 +480,7 @@ export default function IncidentDetail() {
             <h3 className="text-sm font-semibold text-white mb-4">Case Tasks</h3>
             <CaseTasksPanel
               incident={incident}
-              canEdit={canEdit}
+              canEdit={canUpdateCase}
               onUpdated={(updated) => setIncident((prev) => ({ ...prev, ...updated, alerts: prev.alerts, events: prev.events, agentOutputs: prev.agentOutputs }))}
             />
           </GlassCard>
@@ -500,10 +510,10 @@ export default function IncidentDetail() {
 
       {activeTab === 'playbook' && (
         <div className="space-y-6">
-          {canEdit && playbookTemplates.length > 0 && (
+          {canRequestPlaybooks && playbookTemplates.length > 0 && (
             <GlassCard>
               <h3 className="text-sm font-semibold text-white mb-2">Response Playbook Templates</h3>
-              <p className="text-xs text-gray-500 mb-4">Run a multi-step SOAR playbook — each step requires analyst approval.</p>
+              <p className="text-xs text-gray-500 mb-4">Request a multi-step SOAR playbook — each step requires admin approval before execution.</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {playbookTemplates.map((template) => (
                   <div key={template.id} className="p-4 rounded-xl border border-white/[0.06] bg-black/20">
@@ -520,12 +530,12 @@ export default function IncidentDetail() {
           )}
           <GlassCard>
             <h3 className="text-sm font-semibold text-white mb-2">Mitigation Playbook</h3>
-            <p className="text-xs text-gray-500 mb-4">AI-recommended and template actions require analyst approval before simulated execution.</p>
+            <p className="text-xs text-gray-500 mb-4">AI-recommended actions require admin approval before simulated execution.</p>
             <PlaybookPanel
               actions={playbookActions}
               auditLogs={auditLogs}
               incidentId={id}
-              canEdit={canEdit}
+              canApprove={canApprovePlaybooks}
               loading={playbooksLoading}
               onApprove={handleApprovePlaybook}
               onReject={handleRejectPlaybook}

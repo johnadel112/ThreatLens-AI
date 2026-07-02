@@ -52,7 +52,7 @@ export default function PlaybookPanel({
   actions = [],
   auditLogs = [],
   incidentId,
-  canEdit = false,
+  canApprove = false,
   onApprove,
   onReject,
   onExecute,
@@ -138,7 +138,14 @@ export default function PlaybookPanel({
             </p>
           )}
 
-          {canEdit && (
+          {action.status === 'pending' && !canApprove && (
+            <p className="text-[10px] text-amber-300/90 mt-3 flex items-center gap-1.5">
+              <Clock className="w-3 h-3" />
+              Requires admin approval
+            </p>
+          )}
+
+          {canApprove && (
             <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-white/[0.06]">
               {action.status === 'pending' && (
                 <>

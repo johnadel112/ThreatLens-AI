@@ -11,6 +11,7 @@ import SeverityBadge from '../components/ui/SeverityBadge';
 import RiskScoreBadge from '../components/ui/RiskScoreBadge';
 import MitreTechniqueBadge from '../components/ui/MitreTechniqueBadge';
 import StatusBadge from '../components/ui/StatusBadge';
+import { PERMISSIONS } from '../utils/permissions';
 
 const SEVERITIES = ['', 'low', 'medium', 'high', 'critical'];
 const STATUSES = ['', 'open', 'acknowledged', 'resolved', 'false_positive'];
@@ -61,8 +62,8 @@ function EvidencePanel({ evidence, onClose }) {
 }
 
 export default function Alerts() {
-  const { hasRole } = useAuth();
-  const canUpdate = hasRole('admin', 'analyst');
+  const { can } = useAuth();
+  const canUpdate = can(PERMISSIONS.ALERTS_UPDATE);
 
   const [alerts, setAlerts] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 });

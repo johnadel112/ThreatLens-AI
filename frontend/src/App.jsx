@@ -16,6 +16,8 @@ import AuditLogs from './pages/AuditLogs';
 import DetectionRules from './pages/DetectionRules';
 import Notifications from './pages/Notifications';
 import PlaybookQueue from './pages/PlaybookQueue';
+import PermissionRoute from './components/layout/PermissionRoute';
+import { PERMISSIONS } from './utils/permissions';
 
 export default function App() {
   return (
@@ -52,7 +54,14 @@ export default function App() {
         <Route path="incidents/:id/agents" element={<AgentActivity />} />
         <Route path="reports" element={<Reports />} />
         <Route path="reports/:id" element={<ReportDetail />} />
-        <Route path="audit" element={<AuditLogs />} />
+        <Route
+          path="audit"
+          element={
+            <PermissionRoute permission={PERMISSIONS.AUDIT_LOGS_READ}>
+              <AuditLogs />
+            </PermissionRoute>
+          }
+        />
         <Route path="rules" element={<DetectionRules />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="playbooks" element={<PlaybookQueue />} />
