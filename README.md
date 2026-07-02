@@ -1,182 +1,68 @@
 # ThreatLens AI
 
-**AI-Powered Security Operations Platform**
+ThreatLens AI is a security operations dashboard for working with simulated SIEM-style events. It ingests JSON security logs, runs detection rules, groups alerts into cases, and can run an AI-assisted investigation workflow that produces SOC reports.
 
-ThreatLens AI is a full-stack SOC-style platform that collects simulated security events, detects suspicious activity using rule-based detection, groups alerts into incidents, and uses a multi-agent AI workflow to generate timelines, root-cause analysis, mitigation recommendations, and professional SOC reports.
+All event data is simulated — nothing in this project connects to real production systems.
 
-> This project uses **safe, simulated JSON security logs** — not real company data or harmful traffic.
+## What's in the repo
 
-## Architecture
+| Folder | What it does |
+|--------|----------------|
+| `frontend/` | React dashboard (Vite + Tailwind) |
+| `backend/` | Express API, auth, detection engine, cases |
+| `ai-service/` | FastAPI service for multi-agent investigations |
+| `simulator/` | Scripts that send sample event traffic |
 
-```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│  Simulator  │────▶│   Backend    │────▶│   MongoDB   │
-└─────────────┘     │  (Express)   │     └─────────────┘
-                    │              │
-┌─────────────┐     │  Detection   │     ┌─────────────┐
-│   React     │────▶│  Engine      │────▶│ AI Service  │
-│  Dashboard  │     └──────────────┘     │  (FastAPI)  │
-└─────────────┘                          └─────────────┘
-```
+See [architecture.md](architecture.md) for how the pieces connect.
 
-## Tech Stack
+## Run locally
 
-| Layer | Technologies |
-|-------|-------------|
-| Frontend | React, Vite, Tailwind CSS, Recharts |
-| Backend | Node.js, Express, MongoDB, Mongoose, JWT |
-| AI Service | Python, FastAPI, LangGraph |
-| DevOps | Docker, Docker Compose, GitHub Actions |
-
-## Project Structure
-
-```
-threatlens-ai/
-├── backend/        # Express API, detection engine, auth
-├── frontend/       # React SOC dashboard
-├── ai-service/     # Multi-agent AI workflow (FastAPI)
-├── simulator/      # Event traffic generator scripts
-└── docs/           # Architecture and deployment guides
-```
-
-## Quick Start (Local Development)
-
-### Prerequisites
-
-- Node.js 18+
-- Python 3.11+
-- MongoDB 7+ (local or Docker)
-
-### 1. Clone and configure
+**Requirements:** Node 18+, Python 3.11+, MongoDB
 
 ```bash
-git clone <repo-url>
-cd threatlens-ai
 cp .env.example .env
-# Edit .env with your values
-```
 
-### 2. Start MongoDB
+# Terminal 1 — backend
+cd backend && npm install && npm run dev
 
-```bash
-# Local install, or:
-docker run -d -p 27017:27017 --name threatlens-mongo mongo:7
-```
-
-### 3. Backend
-
-```bash
-cd backend
-cp .env.example .env
-npm install
-npm run seed    # optional: create demo users
-npm run seed:events  # optional: send sample security events
-npm run dev
-# → http://localhost:4000/health
-```
-
-**Demo accounts** (after `npm run seed`):
-
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@threatlens.local | Admin123! |
-| Analyst | analyst@threatlens.local | Analyst123! |
-| Viewer | viewer@threatlens.local | Viewer123! |
-
-### 4. AI Service
-
-```bash
-cd ai-service
-python -m venv .venv
-# Windows: .venv\Scripts\activate
-# macOS/Linux: source .venv/bin/activate
-pip install -r requirements.txt
+# Terminal 2 — AI service
+cd ai-service && pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
-# → http://localhost:8000/health
-```
 
-### 5. Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-# → http://localhost:5173
-```
-
-### 6. Simulator
-
-```bash
-cd simulator
-npm install
-npm run attack    # brute force demo scenario
-npm run normal    # baseline traffic
-npm run mixed     # normal + attack + normal
-```
-
-## Docker (recommended for demos)
-
-```bash
-# From repository root
-docker compose up --build -d
-
-# Seed demo users
-docker compose exec backend node scripts/seed-users.js
+# Terminal 3 — frontend
+cd frontend && npm install && npm run dev
 ```
 
 | Service | URL |
 |---------|-----|
-| Dashboard | http://localhost:3000 |
-| Backend | http://localhost:4000/health |
-| AI Service | http://localhost:8000/health |
+| Dashboard | http://localhost:5173 |
+| API | http://localhost:4000/health |
+| AI service | http://localhost:8000/health |
 
-See [docs/deployment.md](docs/deployment.md) for full Docker documentation.
-
-## Cloud Deployment (Render + MongoDB Atlas)
+### Docker
 
 ```bash
-# 1. Create MongoDB Atlas cluster and copy MONGODB_URI
-# 2. Render Dashboard → New → Blueprint → connect this repo
-# 3. Set MONGODB_URI and optional OPENAI_API_KEY
-# 4. Seed users via Render backend shell: node scripts/seed-users.js
+docker compose up --build -d
 ```
 
-| Service | URL (after deploy) |
-|---------|-------------------|
-| Dashboard | `https://threatlens-frontend.onrender.com` |
-| Backend | `https://threatlens-backend.onrender.com` |
+Dashboard: http://localhost:3000
 
-Full guide: [docs/cloud-deployment.md](docs/cloud-deployment.md)
+## Roles
 
-**Atlas + Vercel + Railway:** [docs/cloud-deployment-atlas-vercel-railway.md](docs/cloud-deployment-atlas-vercel-railway.md)
+Three roles are supported:
 
-**No credit card / no Atlas?** [docs/cloud-deployment-no-atlas.md](docs/cloud-deployment-no-atlas.md) — **stable HTTPS URL:** [docs/cloudflare-tunnel.md](docs/cloudflare-tunnel.md) · **always-on VM:** [docs/oracle-cloud-vm.md](docs/oracle-cloud-vm.md).
+| Role | Access |
+|------|--------|
+| **Viewer** | Read events, alerts, cases, reports, audit logs |
+| **Analyst** | Everything a viewer can do, plus investigate cases, update alerts, approve SOAR actions |
+| **Admin** | Everything an analyst can do, plus detection rule sync |
 
-## Health Checks
+You can pick a role when registering. Demo seed users may also exist if you run the backend seed script.
 
-| Service | Endpoint |
-|---------|----------|
-| Backend | `GET http://localhost:4000/health` |
-| AI Service | `GET http://localhost:8000/health` |
-| Frontend (dev) | `http://localhost:5173` |
-| Frontend (Docker) | `http://localhost:3000` |
+## Health checks
 
-## Development Roadmap
-
-| Week | Focus |
-|------|-------|
-| 1 | Project setup, health endpoints, README |
-| 2 | Authentication, JWT, RBAC, login/register |
-| 3 | Event collector API and Events page |
-| 4 | Event simulator (normal, attack, mixed) |
-| 5 | Detection engine and Alerts page |
-| 6 | Incident management and detail pages |
-| 7 | Basic AI integration and incident summaries |
-| 8 | Multi-agent LangGraph workflow |
-| 9 | Playbook automation |
-| 10 | UI polish and reporting |
-| 11 | Docker and CI/CD |
-| 12 | Portfolio package |
+- Backend: `GET /health`
+- AI service: `GET /health` (not `/api/health`)
 
 ## License
 
