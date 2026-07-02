@@ -113,8 +113,10 @@ Railway may create one service from the repo root — we need **two** services.
 | `JWT_EXPIRES_IN` | `8h` |
 | `NODE_ENV` | `production` |
 | `AI_SERVICE_URL` | `https://YOUR-AI-URL` (no trailing slash) |
-| `SIMULATOR_API_KEY` | Random string, e.g. `simulator-prod-key-abc123` |
+| `SIMULATOR_API_KEY` | Random string, e.g. `threatlens-sim-key-2026` |
 | `CORS_ORIGINS` | Leave blank for now — set after Vercel deploy |
+
+> **Required for demo data:** `SIMULATOR_API_KEY` must be set on Railway or the simulator cannot POST events (dashboard stays at 0).
 
 4. **Networking** → **Generate Domain**.
 5. Copy backend URL, e.g. `https://threatlens-backend-production.up.railway.app`
@@ -221,10 +223,10 @@ On your PC, edit `simulator/.env`:
 
 ```env
 BACKEND_URL=https://YOUR-BACKEND-URL/api
-SIMULATOR_API_KEY=simulator-prod-key-abc123
+SIMULATOR_API_KEY=threatlens-sim-key-2026
 ```
 
-Use the same `SIMULATOR_API_KEY` as Railway backend.
+Use the **same** `SIMULATOR_API_KEY` as on Railway backend.
 
 ```powershell
 cd "C:\Users\Hp\Desktop\ThreatLens AI\simulator"

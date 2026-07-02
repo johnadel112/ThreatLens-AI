@@ -1,7 +1,7 @@
 import MitreTechniqueBadge from '../ui/MitreTechniqueBadge';
 import RiskScoreBadge from '../ui/RiskScoreBadge';
 
-export default function AISummaryPanel({ incident }) {
+export default function AISummaryPanel({ incident, onRetry }) {
   if (!incident?.aiSummary && incident?.investigationStatus === 'not_started') {
     return (
       <p className="text-sm text-gray-500">
@@ -16,9 +16,21 @@ export default function AISummaryPanel({ incident }) {
 
   if (incident?.investigationStatus === 'failed') {
     return (
-      <p className="text-sm text-red-300">
-        Investigation failed. Ensure the AI service is running on port 8000 and try again.
-      </p>
+      <div className="space-y-3">
+        <p className="text-sm text-red-300">
+          Investigation could not complete. Click &quot;Investigate with AI&quot; to retry — the platform
+          will run an evidence-based analysis even when the dedicated AI service is offline.
+        </p>
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="text-sm font-medium text-soc-accent hover:text-soc-accent/80 transition-colors"
+          >
+            Retry investigation
+          </button>
+        )}
+      </div>
     );
   }
 

@@ -1,7 +1,8 @@
 import AgentOutput from '../../models/AgentOutput.js';
 import Incident from '../../models/Incident.js';
 import { WORKFLOW_AGENTS } from '../../config/agents.js';
-import { requestInvestigationWorkflow } from '../ai/aiClient.js';
+import { requestInvestigationWorkflow, checkAiServiceHealth } from '../ai/aiClient.js';
+import { runFallbackInvestigationWorkflow } from './fallbackWorkflow.service.js';
 import {
   loadIncidentBundle,
   toAiServiceContext,
@@ -115,7 +116,20 @@ export async function runBasicInvestigation(incidentId, user) {
 
   try {
     const context = toAiServiceContext(incident, alerts, events);
-    const workflowResult = await requestInvestigationWorkflow(context);
+    let workflowResult;
+    let usedFallback = false;
+
+    try {
+      const health = await checkAiServiceHealth();
+      if (!health?.ok) {
+        throw new Error('AI service health check failed');
+      }
+      workflowResult = await requestInvestigationWorkflow(context);
+    } catch (aiErr) {
+      console.warn('[investigation] AI service unavailable — using evidence-based fallback:', aiErr.message);
+      workflowResult = runFallbackInvestigationWorkflow(context);
+      usedFallback = true;
+    }
 
     await applyWorkflowResults(incidentId, workflowResult);
 
@@ -195,7 +209,8 @@ export async function runBasicInvestigation(incidentId, user) {
     return {
       incident: toIncidentDetailJson(refreshed.incident, refreshed.alerts, refreshed.events, outputs),
       agentOutputs: outputs.map((o) => o.toPublicJSON()),
-      aiSource: workflowResult.source,
+      aiSource: usedFallback ? 'fallback' : workflowResult.source,
+      usedFallback,
     };
   } catch (err) {
     for (const agentName of WORKFLOW_AGENTS) {

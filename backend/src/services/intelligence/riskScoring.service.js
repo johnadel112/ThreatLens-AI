@@ -72,23 +72,27 @@ export function computeIncidentRiskScore({
   score += openAlerts.filter((a) => a.severity === 'high').length * 4;
 
   score += Math.min(events.length * 0.5, 10);
-  score += (correlationScore || 0) * 0.25;
+  score += Math.min((correlationScore || 0) * 0.12, 15);
 
   if (mitreSummary?.tacticCount) score += Math.min(mitreSummary.tacticCount * 4, 16);
   if (threatIntel?.reputation) score += reputationRiskBoost(threatIntel.reputation);
 
   const raw = clamp(score);
-  if (raw >= 91 && (openAlerts.filter((a) => a.severity === 'critical').length < 2)) {
+  const openCritical = openAlerts.filter((a) => a.severity === 'critical').length;
+  if (raw >= 91 && openCritical < 2) {
     return Math.min(90, raw);
+  }
+  if (raw >= 76 && severity !== 'critical' && openCritical === 0) {
+    return Math.min(75, raw);
   }
   return raw;
 }
 
 export function computeConfidenceScore({ correlationScore, alertCount, eventCount, hasAiSummary }) {
-  let confidence = 40;
-  confidence += Math.min(correlationScore * 0.35, 35);
-  confidence += Math.min(alertCount * 5, 15);
-  confidence += Math.min(eventCount * 1.5, 10);
-  if (hasAiSummary) confidence += 10;
-  return clamp(confidence);
+  let confidence = 35;
+  confidence += Math.min((correlationScore || 0) * 0.22, 22);
+  confidence += Math.min(alertCount * 4, 12);
+  confidence += Math.min(eventCount * 1.2, 8);
+  if (hasAiSummary) confidence += 12;
+  return Math.min(hasAiSummary ? 95 : 82, clamp(confidence));
 }

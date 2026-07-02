@@ -15,8 +15,20 @@ function QualityBar({ label, value }) {
   );
 }
 
+export function hasReportQualityData(quality) {
+  if (!quality) return false;
+  if (quality.overallConfidence > 0) return true;
+  return [
+    quality.evidenceCompleteness,
+    quality.timelineQuality,
+    quality.threatClassificationConfidence,
+    quality.mitigationQuality,
+    quality.reportClarity,
+  ].some((v) => v > 0);
+}
+
 export default function ReportQualityPanel({ quality }) {
-  if (!quality) {
+  if (!hasReportQualityData(quality)) {
     return (
       <p className="text-sm text-gray-500">
         Report quality scores appear after AI investigation completes.
